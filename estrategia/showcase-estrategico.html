@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaaS — Checkout Veicular Inteligente · Orquestração Agêntica</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0e14;
+    --surface: #131822;
+    --surface2: #1a2230;
+    --surface3: #20283a;
+    --border: rgba(255,255,255,0.08);
+    --signal: #CC092F;   /* agente / ação / ignição */
+    --data: #4ea8de;     /* dados / legado */
+    --risk: #e5484d;     /* risco */
+    --success: #2dd4a8;  /* recomendado / viável */
+    --violet: #9b87f5;   /* crédito / VaaS */
+    --text: #e9edf4;
+    --muted: #7c8699;
+    --muted2: #4f5868;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(204,9,47,0.3); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 56px 40px 36px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -140px; left: -60px;
+    width: 480px; height: 480px;
+    background: radial-gradient(circle, rgba(204,9,47,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    top: -80px; right: 60px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(155,135,245,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4.2vw, 50px);
+    font-weight: 800;
+    line-height: 1.08;
+    color: var(--text);
+    margin-bottom: 16px;
+    position: relative;
+    max-width: 800px;
+  }
+  .header h1 span { color: var(--signal); }
+  .header-sub {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 640px;
+    line-height: 1.65;
+    font-weight: 300;
+    position: relative;
+  }
+  .header-meta {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .meta-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .meta-chip .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* relay signature — only in overview hero */
+  .relay {
+    margin-top: 40px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    flex-wrap: wrap;
+  }
+  .relay-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: var(--text);
+    min-width: 130px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .relay-node .l { display:block; font-size: 9.5px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .relay-line {
+    flex: 1;
+    min-width: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--muted2), var(--muted2));
+    position: relative;
+    margin: 0 -1px;
+  }
+  .relay-line::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: 0;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 8px var(--signal);
+    animation: pulse-move 3.2s ease-in-out infinite;
+  }
+  @keyframes pulse-move {
+    0% { left: 0; opacity: 0; }
+    8% { opacity: 1; }
+    92% { opacity: 1; }
+    100% { left: calc(100% - 5px); opacity: 0; }
+  }
+  .relay-line:nth-child(2)::before { animation-delay: 0s; }
+  .relay-line:nth-child(4)::before { animation-delay: 0.8s; }
+  .relay-line:nth-child(6)::before { animation-delay: 1.6s; }
+
+  /* ===== NAV ===== */
+  .nav {
+    display: flex;
+    gap: 4px;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav-tab {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 16px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--text); border-bottom-color: var(--signal); }
+
+  .main { padding: 44px 40px 100px; max-width: 1180px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; animation: fadein 0.25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+  .section-number { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--signal); }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; }
+  .section-subtitle { color: var(--muted); font-size: 14px; max-width: 700px; line-height: 1.6; margin-bottom: 32px; }
+
+  h3.sub-h { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin: 38px 0 14px; display:flex; align-items:center; gap:10px; }
+  h3.sub-h .n { color: var(--muted2); font-size: 12px; font-family:'DM Mono', monospace; }
+
+  p.lead { font-size: 14.5px; line-height: 1.75; color: #c7cedb; margin-bottom: 14px; max-width: 760px; }
+  p.lead strong { color: var(--text); font-weight: 600; }
+
+  /* cards grid */
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-icon { font-size: 18px; margin-bottom: 10px; display: inline-block; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .card-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card-body b { color: #c7cedb; }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .tag-signal { background: rgba(204,9,47,0.12); color: var(--signal); }
+  .tag-data { background: rgba(78,168,222,0.12); color: var(--data); }
+  .tag-success { background: rgba(45,212,168,0.12); color: var(--success); }
+  .tag-risk { background: rgba(229,72,77,0.12); color: var(--risk); }
+  .tag-violet { background: rgba(155,135,245,0.12); color: var(--violet); }
+
+  /* stack diagram */
+  .stack { display: flex; flex-direction: column; gap: 8px; margin: 20px 0 32px; }
+  .stack-row {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .stack-row .lbl { font-family:'Syne', sans-serif; font-weight:700; font-size:13px; min-width:200px; }
+  .stack-row .lbl span { display:block; font-family:'DM Mono',monospace; font-weight:400; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  .stack-row .items { display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end; }
+  .pill { background: var(--surface2); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11.5px; color:#c7cedb; }
+  .stack-row.l1 { background: rgba(204,9,47,0.05); border-color: rgba(204,9,47,0.25); }
+  .stack-row.l2 { background: rgba(78,168,222,0.05); border-color: rgba(78,168,222,0.25); }
+  .stack-row.l3 { background: rgba(155,135,245,0.05); border-color: rgba(155,135,245,0.25); }
+  .stack-row.l4 { background: rgba(124,134,153,0.05); border-color: var(--border); }
+  .stack-arrow { text-align:center; color: var(--muted2); font-size:12px; margin: -2px 0; }
+
+  /* tables */
+  table.t { width: 100%; border-collapse: collapse; margin: 14px 0 28px; font-size: 13px; }
+  table.t th { text-align: left; font-family:'DM Mono',monospace; font-size: 10.5px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  table.t td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: #c7cedb; vertical-align: top; }
+  table.t tr:last-child td { border-bottom: none; }
+  table.t td.num { font-family:'DM Mono',monospace; color: var(--text); white-space: nowrap; }
+
+  /* model cards */
+  .model { border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:16px; position:relative; }
+  .model.rec { border-color: rgba(45,212,168,0.4); background: rgba(45,212,168,0.04); }
+  .model-head { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  .model-name { font-family:'Syne',sans-serif; font-weight:700; font-size:17px; }
+  .model-sub { font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .model-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 14px; }
+  @media (max-width: 700px) { .model-grid { grid-template-columns: 1fr; } }
+  .model-grid ul { list-style:none; font-size:12.5px; color:#c7cedb; line-height:1.7; }
+  .model-grid li { padding-left:14px; position:relative; margin-bottom:4px; }
+  .model-grid li::before { content:'—'; position:absolute; left:0; color:var(--muted2); }
+  .model-grid h5 { font-size: 11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-bottom:8px; font-weight:600; }
+
+  /* roadmap timeline */
+  .tl { display:flex; flex-direction:column; gap:0; margin-top: 10px; }
+  .tl-item { display:flex; gap:18px; padding: 16px 0; border-bottom:1px solid var(--border); }
+  .tl-item:last-child { border-bottom:none; }
+  .tl-day { font-family:'DM Mono',monospace; font-size:11px; color:var(--signal); min-width:90px; padding-top:2px; }
+  .tl-body b { display:block; font-size:14px; margin-bottom:4px; font-family:'Syne',sans-serif; }
+  .tl-body p { font-size:13px; color:var(--muted); line-height:1.6; }
+
+  .callout {
+    border-left: 3px solid var(--signal);
+    background: var(--surface);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    font-size: 13.5px;
+    color: #c7cedb;
+    line-height: 1.65;
+    margin: 20px 0;
+  }
+  .callout b { color: var(--text); }
+  .callout.success { border-left-color: var(--success); }
+  .callout.risk { border-left-color: var(--risk); }
+
+  .divider { height: 1px; background: var(--border); margin: 44px 0; }
+
+  .footer { text-align:center; padding: 30px 0 10px; font-size:11.5px; color: var(--muted2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">Brainstorm Estratégico · Open Platform &amp; BaaS · Prep. reunião com Gestão de Tecnologia</div>
+  <h1>Checkout Veicular Inteligente <span>com Orquestração Agêntica</span></h1>
+  <p class="header-sub">No instante do pagamento do veículo, um agente de IA orquestra — dentro do ecossistema Bradesco — o pagamento do bem, dos tributos, do licenciamento e das taxas. Multicanal, apoiado em AI Gateway, MCP e RAG, e construído sobre o que já estamos erguendo em BaaS, CaaS e LaaS.</p>
+  <div class="header-meta">
+    <span class="meta-chip"><span class="dot" style="background:var(--signal)"></span> Nova camada: VaaS</span>
+    <span class="meta-chip"><span class="dot" style="background:var(--data)"></span> AI Gateway + MCP + RAG</span>
+    <span class="meta-chip"><span class="dot" style="background:var(--violet)"></span> Multicanal: app, agente, chatbot, embedded</span>
+  </div>
+
+  <div class="relay">
+    <div class="relay-node"><span class="l">Canal</span>App / Agente / Chatbot</div>
+    <div class="relay-line"></div>
+    <div class="relay-node"><span class="l">Governança</span>AI Gateway</div>
+    <div class="relay-line"></div>
+    <div class="relay-node"><span class="l">Execução</span>MCP Server</div>
+    <div class="relay-line"></div>
+    <div class="relay-node"><span class="l">Sistema</span>DETRAN / SEFAZ</div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="showSection('overview', this)">Visão Geral</button>
+  <button class="nav-tab" onclick="showSection('arch', this)">Arquitetura</button>
+  <button class="nav-tab" onclick="showSection('models', this)">Modelos &amp; IA</button>
+  <button class="nav-tab" onclick="showSection('risk', this)">Riscos &amp; Latência</button>
+  <button class="nav-tab" onclick="showSection('exec', this)">Execução</button>
+  <button class="nav-tab" onclick="showSection('invest', this)">Investimento &amp; Cloud</button>
+  <button class="nav-tab" onclick="showSection('roadmap', this)">Roadmap</button>
+</nav>
+
+<div class="main">
+
+  <!-- ===================== VISÃO GERAL ===================== -->
+  <div class="section active" id="sec-overview">
+    <div class="section-header"><span class="section-number">01</span><h2 class="section-title">Visão Geral</h2></div>
+    <p class="section-subtitle">O problema, o tamanho da oportunidade e a tese de produto — antes de entrar em arquitetura.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> O problema</h3>
+    <p class="lead">Hoje, o momento da compra do veículo é o ponto de maior atrito da jornada: o cliente sai do ecossistema bancário para resolver <strong>IPVA, emplacamento, transferência de propriedade e seguro</strong> em sistemas fragmentados — DETRAN estadual, SEFAZ, despachante, seguradora. O Bradesco financia o bem, mas não captura o resto da jornada — nem o relacionamento, nem a receita, nem o dado.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> O tamanho da oportunidade</h3>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="card-icon">🚗</div>
+        <div class="card-title">~15,7 milhões</div>
+        <div class="card-body">de veículos usados/seminovos negociados em 2025 no Brasil — recorde histórico (Fenauto), <b>17%+ de crescimento</b> sobre 2024.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💳</div>
+        <div class="card-title">R$ 192,1 bi</div>
+        <div class="card-body">em crédito para compra de veículos em 2024 (+36,4%) — <b>44% dos emplacamentos</b> já são financiados, em tendência de alta.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">2,8 milhões</div>
+        <div class="card-body">de veículos 0KM projetados para 2025 (Anfavea) — cada um gera IPVA + emplacamento + transferência recorrentes.</div>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:18px">É um mercado gigantesco, já maturado para crédito embedded — exatamente a tese que já estamos validando com CaaS e LaaS. O que falta é estender essa tese para o <strong>momento de pagamento do bem em si</strong>, não só para o crédito que o viabiliza.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> A tese de produto: uma nova camada — VaaS</h3>
+    <p class="lead">Proponho tratar isso não como "mais uma API", mas como uma <strong>quinta camada de domínio</strong>, paralela a BaaS / CaaS / LaaS: <strong>VaaS — Vehicle as a Service</strong>. Ela concentra os produtos e integrações específicos do universo veicular (cálculo e pagamento de tributos, emplacamento, transferência, seguro), consome Core Platform e CaaS/LaaS para crédito, e se expõe a parceiros (concessionárias, marketplaces, fintechs de mobilidade) através do BaaS — fechando o ciclo na mesma infraestrutura de APIs que já estamos construindo.</p>
+
+    <div class="callout success"><b>Por que isso é estratégico agora:</b> não estamos criando uma plataforma nova do zero — estamos estendendo Core Platform, CaaS e LaaS com um domínio vertical de alto volume e alta frequência de tributo/taxa, usando a primeira aplicação real de orquestração agêntica dentro do Open Platform.</div>
+  </div>
+
+  <!-- ===================== ARQUITETURA ===================== -->
+  <div class="section" id="sec-arch">
+    <div class="section-header"><span class="section-number">02</span><h2 class="section-title">Arquitetura em Camadas</h2></div>
+    <p class="section-subtitle">Multicanal na entrada, orquestração de IA no meio, domínio BaaS/CaaS/LaaS/VaaS na base, legado estadual na ponta.</p>
+
+    <div class="stack">
+      <div class="stack-row l1">
+        <div class="lbl"><span>Camada 1</span>Canais</div>
+        <div class="items">
+          <span class="pill">App Bradesco</span>
+          <span class="pill">Internet Banking</span>
+          <span class="pill">App Agêntico</span>
+          <span class="pill">Chatbot (WhatsApp)</span>
+          <span class="pill">Widget Embedded (concessionária)</span>
+        </div>
+      </div>
+      <div class="stack-arrow">↓</div>
+      <div class="stack-row l2">
+        <div class="lbl"><span>Camada 2</span>Orquestração de IA</div>
+        <div class="items">
+          <span class="pill">AI Gateway</span>
+          <span class="pill">Agente Orquestrador</span>
+          <span class="pill">MCP Servers</span>
+          <span class="pill">Base RAG (regras por UF)</span>
+        </div>
+      </div>
+      <div class="stack-arrow">↓</div>
+      <div class="stack-row l3">
+        <div class="lbl"><span>Camada 3</span>Domínio</div>
+        <div class="items">
+          <span class="pill">Core Platform</span>
+          <span class="pill">CaaS</span>
+          <span class="pill">LaaS</span>
+          <span class="pill" style="border-color:var(--violet);color:var(--violet)">VaaS (novo)</span>
+          <span class="pill">BaaS p/ parceiros</span>
+        </div>
+      </div>
+      <div class="stack-arrow">↓</div>
+      <div class="stack-row l4">
+        <div class="lbl"><span>Camada 4</span>Legado &amp; Externo</div>
+        <div class="items">
+          <span class="pill">DETRAN (27 UFs)</span>
+          <span class="pill">SEFAZ / Arrecadação</span>
+          <span class="pill">RENAVAM</span>
+          <span class="pill">Seguradoras</span>
+          <span class="pill">Despachante digital</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub-h"><span class="n">○</span> Os três conceitos que sustentam a camada de IA</h3>
+    <p class="lead">Você pediu pra organizar isso de um jeito que dê pra explicar sem pressupor conhecimento prévio — então vai direto ao ponto de cada peça:</p>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <span class="tag tag-data">AI Gateway</span>
+        <div class="card-title">O "Axway da IA"</div>
+        <div class="card-body">Fica entre as aplicações e os modelos/ferramentas de IA. Centraliza <b>autenticação, custo, rate limit, roteamento entre provedores e auditoria</b> — exatamente o papel que o Axway hoje cumpre para APIs REST. Gartner projeta que <b>75% dos fornecedores de API Gateway</b> terão recursos de IA nativos até o fim de 2026. Kong e Azure APIM — já no nosso benchmark de gateway — estão entre eles.</div>
+      </div>
+      <div class="card">
+        <span class="tag tag-signal">MCP</span>
+        <div class="card-title">Tool-calling padronizado</div>
+        <div class="card-body">Model Context Protocol é o padrão (Anthropic, adotado por OpenAI, Google, Microsoft, AWS) que permite ao agente <b>descobrir e chamar ferramentas</b> — "consultar débito de IPVA", "gerar guia", "agendar vistoria" — sem integração ponto-a-ponto pra cada sistema. Já passa de <b>9.400 servidores</b> no registro público e 78% de adoção em produção entre times de IA enterprise.</div>
+      </div>
+      <div class="card">
+        <span class="tag tag-violet">RAG</span>
+        <div class="card-title">Buscar a regra, não "adivinhar"</div>
+        <div class="card-body">Retrieval-Augmented Generation: antes de responder, o agente <b>busca a regra certa</b> numa base de conhecimento, em vez de gerar a partir de memória do modelo. Essencial aqui porque IPVA, alíquota e prazo de licenciamento variam nas 27 UFs — é a mesma lógica que já prototipamos no Débito Veicular do developer portal, só que agora alimentando uma execução, não uma consulta.</div>
+      </div>
+    </div>
+
+    <div class="callout"><b>Conexão direta com o que já existe:</b> isso não é uma stack nova — é a extensão natural da proposta de API Platform (Axway → Apigee/Azure APIM) e do trabalho de multi-UF do Débito Veicular. O AI Gateway e o MCP Gateway, na prática, viram <b>mais um produto exposto pelo mesmo gateway de API</b> que já estamos avaliando.</div>
+  </div>
+
+  <!-- ===================== MODELOS & IA ===================== -->
+  <div class="section" id="sec-models">
+    <div class="section-header"><span class="section-number">03</span><h2 class="section-title">Modelos Viáveis de Orquestração</h2></div>
+    <p class="section-subtitle">Três níveis de autonomia possíveis. Quanto mais autonomia, mais flexível — e mais peso de governança precisa carregar.</p>
+
+    <div class="model">
+      <div class="model-head">
+        <div><div class="model-name">Modelo A — Workflow Determinístico + IA Assistiva</div><div class="model-sub">Baixa autonomia · aprovação de compliance mais rápida</div></div>
+        <span class="tag tag-data">Conservador</span>
+      </div>
+      <p class="lead" style="margin:0">A regra de negócio vive num motor de orquestração clássico (BPM / state machine). A IA aparece só na conversa com o cliente — explica o cálculo, tira dúvida, nunca decide a sequência de chamadas.</p>
+      <div class="model-grid">
+        <div><h5>Vantagens</h5><ul><li>Auditável por padrão, sem "caixa-preta" de decisão</li><li>Mais fácil de aprovar com Compliance/Risco</li><li>Latência previsível</li></ul></div>
+        <div><h5>Limites</h5><ul><li>Cada novo estado/parceiro = novo fluxo codificado</li><li>Não escala bem para 27 variações de UF</li><li>Pouco diferencial competitivo</li></ul></div>
+      </div>
+    </div>
+
+    <div class="model rec">
+      <div class="model-head">
+        <div><div class="model-name">Modelo B — Agente Orquestrador com MCP Governado</div><div class="model-sub">Autonomia média · gate determinístico na execução financeira</div></div>
+        <span class="tag tag-success">Recomendado p/ começar</span>
+      </div>
+      <p class="lead" style="margin:0">O agente decide <b>qual</b> sequência de ferramentas chamar (via MCP Gateway) e a base RAG fornece a regra de cada UF. Mas a <b>execução financeira sempre passa por um gate determinístico</b> — limite de valor, dupla validação, política fixa — que não é decidido pelo modelo.</p>
+      <div class="model-grid">
+        <div><h5>Vantagens</h5><ul><li>Flexível para novos estados sem reescrever fluxo</li><li>Risco de execução contido pelo gate</li><li>Trilha de auditoria nativa do MCP Gateway</li></ul></div>
+        <div><h5>Limites</h5><ul><li>Exige curadoria contínua da base RAG por UF</li><li>Operação nova para os times — curva de aprendizado</li></ul></div>
+      </div>
+    </div>
+
+    <div class="model">
+      <div class="model-head">
+        <div><div class="model-name">Modelo C — Mesh Multiagente Especializado</div><div class="model-sub">Alta autonomia · visão de 12–18 meses</div></div>
+        <span class="tag tag-violet">Horizonte</span>
+      </div>
+      <p class="lead" style="margin:0">Agentes especializados por domínio — tributário, licenciamento, crédito, pagamento — coordenados por um agente central. É o padrão que bancos já usam hoje em AML/compliance (Deloitte, IMF), aplicado aqui ao universo veicular.</p>
+      <div class="model-grid">
+        <div><h5>Vantagens</h5><ul><li>Mais extensível — novo domínio = novo agente, não reescrita</li><li>Paralelismo real entre tarefas</li></ul></div>
+        <div><h5>Limites</h5><ul><li>Maior complexidade operacional e de observabilidade</li><li>Só faz sentido depois de provar o Modelo B em produção</li></ul></div>
+      </div>
+    </div>
+
+    <div class="callout"><b>Recomendação:</b> começar no <b>Modelo B</b> com 1–2 estados-piloto, provar o gate de governança e a curadoria RAG, e só então evoluir para o Modelo C onde o volume de domínios justificar.</div>
+  </div>
+
+  <!-- ===================== RISCOS & LATÊNCIA ===================== -->
+  <div class="section" id="sec-risk">
+    <div class="section-header"><span class="section-number">04</span><h2 class="section-title">Latência &amp; Risco Técnico</h2></div>
+    <p class="section-subtitle">Estimativas de ordem de grandeza para calibrar expectativa — precisam ser validadas com spike técnico, não são SLA.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> Budget de latência por etapa</h3>
+    <table class="t">
+      <tr><th>Etapa</th><th>Estimativa</th><th>Observação</th></tr>
+      <tr><td>Chamada ao AI Gateway / modelo</td><td class="num">300–800 ms</td><td>Depende do modelo e se a resposta é em streaming</td></tr>
+      <tr><td>Retrieval na base RAG</td><td class="num">50–150 ms</td><td>Baixo, mas cresce com base mal indexada</td></tr>
+      <tr><td>Chamada MCP a sistema legado (DETRAN/SEFAZ)</td><td class="num">500 ms – vários seg.</td><td><b>Maior fonte de risco</b> — 27 UFs com maturidade desigual de API</td></tr>
+      <tr><td><b>Jornada completa</b> (calcular + gerar guia)</td><td class="num">~2–5 s cenário bom</td><td>Pode passar de 10s se o Estado estiver lento — desenhar como <b>assíncrono</b>, nunca bloquear o checkout do veículo</td></tr>
+    </table>
+
+    <h3 class="sub-h"><span class="n">○</span> Catálogo de riscos técnicos</h3>
+    <div class="grid grid-2">
+      <div class="card"><span class="tag tag-risk">Alto</span><div class="card-title">Heterogeneidade dos DETRANs</div><div class="card-body">27 integrações estaduais, algumas sem API moderna. Mitigação: avaliar agregador/despachante digital para cobertura inicial em vez de integração direta estado a estado.</div></div>
+      <div class="card"><span class="tag tag-risk">Alto</span><div class="card-title">Governança de execução financeira</div><div class="card-body">Pagar tributo em nome do cliente não pode ser "decisão livre" do agente. Mitigação: gate determinístico + trilha de auditoria imutável no MCP Gateway (padrão já exigido por bancos hoje).</div></div>
+      <div class="card"><span class="tag tag-signal">Médio</span><div class="card-title">Alucinação de regra tributária</div><div class="card-body">Modelo "inventa" alíquota ou prazo. Mitigação: RAG bem curado + validação contra fonte oficial — nunca cálculo de memória do modelo.</div></div>
+      <div class="card"><span class="tag tag-signal">Médio</span><div class="card-title">Exposição de credenciais legadas</div><div class="card-body">Agente nunca deve enxergar credencial de sistema legado. Mitigação: MCP Gateway isola credenciais via OAuth2/cofre — é literalmente a função central do gateway.</div></div>
+      <div class="card"><span class="tag tag-data">Médio</span><div class="card-title">Drift regulatório por UF</div><div class="card-body">Regra estadual muda e a base RAG fica desatualizada. Mitigação: tratar atualização da base como item de catálogo governado — mesmo padrão do BaaS Architecture Playbook.</div></div>
+      <div class="card"><span class="tag tag-data">Médio</span><div class="card-title">Concentração em parceiro externo</div><div class="card-body">Se a cobertura DETRAN depender de um único despachante/agregador, isso cria risco de concentração e de negociação. Mitigação: contrato com cláusula de portabilidade + roadmap de internalizar os estados de maior volume.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== EXECUÇÃO ===================== -->
+  <div class="section" id="sec-exec">
+    <div class="section-header"><span class="section-number">05</span><h2 class="section-title">Modelo de Execução</h2></div>
+    <p class="section-subtitle">Como provar o conceito sem comprometer um squad inteiro antes de validar a tese.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> Fase 0 — Squad satélite (6–8 semanas)</h3>
+    <p class="lead">Em vez de criar um 5º squad formal de imediato, propor um <strong>squad satélite cross-funcional</strong>, com gente "emprestada" das estruturas já existentes, para validar o Modelo B com 1–2 estados antes de comprometer recurso permanente.</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">Times internos envolvidos</div>
+        <div class="card-body">
+          <b>Open APIs</b> — exposição de API e MCP servers (seu time)<br>
+          <b>Core Platform</b> — BFF, autenticação, pagamentos<br>
+          <b>Arquitetura</b> (time de Arquitetura) — padrão de AI Gateway corporativo<br>
+          <b>CaaS / LaaS</b> — encaixe do crédito embedded no fluxo
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Parceiros externos a avaliar</div>
+        <div class="card-body">
+          <b>Despachante digital / agregador</b> — cobertura DETRAN sem integrar 27 estados direto<br>
+          <b>Fornecedor de AI/MCP Gateway</b> — Kong, Azure (CIAM já adotado) ou alternativa enterprise do benchmark<br>
+          <b>Consultoria de multiagente</b> — só se/quando avançar para o Modelo C
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub-h"><span class="n">○</span> Governança</h3>
+    <p class="lead">Não criar ritual novo — encaixar nos que já existem: <strong>API Review Board</strong> passa a avaliar novos MCP tools como avalia hoje novas APIs; <strong>Weekly Cross-Squad Sync</strong> ganha um item fixo de "VaaS / Mobilidade" enquanto for spike.</p>
+  </div>
+
+  <!-- ===================== INVESTIMENTO & CLOUD ===================== -->
+  <div class="section" id="sec-invest">
+    <div class="section-header"><span class="section-number">06</span><h2 class="section-title">Investimento &amp; Estratégia de Cloud</h2></div>
+    <p class="section-subtitle">Ordens de grandeza para abrir a conversa — refinar depois do spike técnico, não antes.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> Blocos de investimento (spike de 6–8 semanas)</h3>
+    <table class="t">
+      <tr><th>Bloco</th><th>Natureza</th><th>Observação</th></tr>
+      <tr><td>Pessoas</td><td class="num">5–6 pessoas, 6–8 sem.</td><td>Squad satélite cross-funcional, sem headcount novo</td></tr>
+      <tr><td>AI / MCP Gateway</td><td class="num">Self-host vs. licenciado</td><td>Self-hosted (ex: gateway open-source) = custo de operação interna; enterprise (Kong/Azure/IBM) = custo recorrente por uso, mas com SOC2/auditoria prontos</td></tr>
+      <tr><td>Base RAG</td><td class="num">Baixo–médio</td><td>Tecnologia é barata; <b>curadoria do conteúdo regulatório por UF é o investimento real</b></td></tr>
+      <tr><td>Integração DETRAN</td><td class="num">Variável por UF</td><td>Agregador reduz custo incremental por estado vs. integração direta</td></tr>
+      <tr><td>Cloud / infra do agente</td><td class="num">Baixo no spike</td><td>Escala junto com o número de estados e canais ativos</td></tr>
+    </table>
+
+    <h3 class="sub-h"><span class="n">○</span> Cloud híbrida ou um único vendor?</h3>
+    <p class="lead">Dado o contexto regulatório (Bacen, LGPD, soberania de dado de crédito) e que já existe investimento em <strong>Azure AD/CIAM</strong>, a recomendação é <strong>híbrida</strong> — não fechar num único vendor agora:</p>
+    <div class="grid grid-3">
+      <div class="card"><span class="tag tag-data">Permanece</span><div class="card-title">Core bancário</div><div class="card-body">Dados sensíveis de crédito e pagamento ficam na infraestrutura privada atual do Bradesco — não migram para a camada de IA.</div></div>
+      <div class="card"><span class="tag tag-signal">Camada de IA</span><div class="card-title">Gateway, agente, RAG</div><div class="card-body">Pode rodar em cloud pública com fronteira de dados estrita, aproveitando o CIAM em Azure já adotado e, possivelmente, o Azure APIM com capacidades de AI/MCP Gateway já no nosso benchmark.</div></div>
+      <div class="card"><span class="tag tag-success">Anti-lock-in</span><div class="card-title">Deployment in-VPC</div><div class="card-body">Priorizar gateways com suporte a deployment in-VPC / air-gapped — vários fornecedores enterprise de MCP Gateway já oferecem isso justamente para banco regulado.</div></div>
+    </div>
+    <div class="callout success"><b>Coerência com o que já documentamos:</b> isso segue o mesmo princípio de "abertura de stack" do BaaS Architecture Playbook — não fixamos tecnologia nova como requisito, avaliamos contra o que já está no radar do benchmark de gateway (Azure APIM como favorito contextual, Kong como alternativa).</div>
+  </div>
+
+  <!-- ===================== ROADMAP ===================== -->
+  <div class="section" id="sec-roadmap">
+    <div class="section-header"><span class="section-number">07</span><h2 class="section-title">Roadmap — Esta Semana → Reunião com Gestão</h2></div>
+    <p class="section-subtitle">O que organizar antes da conversa, e o que precisa ser decidido nela.</p>
+
+    <h3 class="sub-h"><span class="n">○</span> Esta semana</h3>
+    <div class="tl">
+      <div class="tl-item"><div class="tl-day">Organizar</div><div class="tl-body"><b>Consolidar este material</b><p>Transformar em apresentação executiva curta (5–6 slides) a partir deste showcase, para a conversa inicial.</p></div></div>
+      <div class="tl-item"><div class="tl-day">Levantar</div><div class="tl-body"><b>2–3 estados-piloto candidatos</b><p>Ex.: SP pela escala de volume, e 1 estado com integração DETRAN mais madura — para reduzir risco do spike.</p></div></div>
+      <div class="tl-item"><div class="tl-day">Mapear</div><div class="tl-body"><b>Iniciativas correlatas internas</b><p>Verificar overlap com Open Finance/PISP e qualquer iniciativa de IA já em curso em Arquitetura, para não duplicar esforço.</p></div></div>
+    </div>
+
+    <h3 class="sub-h"><span class="n">○</span> Decisões a levar para a Gestão</h3>
+    <div class="tl">
+      <div class="tl-item"><div class="tl-day">Negócio</div><div class="tl-body"><b>Validar a tese de VaaS como 5ª camada</b><p>E o patrocínio executivo — Diretoria Executiva de Atacado ou Superintendência de Negócios e Produtos?</p></div></div>
+      <div class="tl-item"><div class="tl-day">Arquitetura</div><div class="tl-body"><b>Escolher entre Modelo A, B ou C</b><p>Recomendação técnica é B, mas a decisão de risco/governança é conjunta com Arquitetura e Compliance.</p></div></div>
+      <div class="tl-item"><div class="tl-day">Cloud</div><div class="tl-body"><b>Confirmar abordagem híbrida</b><p>E se o spike inicial já testa Azure APIM (favorito contextual) ou abre concorrência com Kong desde o início.</p></div></div>
+      <div class="tl-item"><div class="tl-day">Execução</div><div class="tl-body"><b>Aprovar o squad satélite de 6–8 semanas</b><p>Com quem é "emprestado" de cada time, antes de formalizar squad permanente.</p></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">Bradesco · Open Platform — APIs, BaaS &amp; Embedded Finance · Brainstorm interno · v0.1 · Junho/2026</div>
+
+<script>
+  function showSection(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

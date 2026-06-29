@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente Real · Claude API decidindo as ferramentas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --topbar-bg:#0b0e14; --topbar-border:rgba(255,255,255,0.08); --topbar-text:#e9edf4; --topbar-muted:#7c8699;
+    --chat-bg:#f3f4f7; --chat-surface:#ffffff; --chat-accent:#CC092F; --chat-text:#1d2027; --chat-muted:#6b7280; --chat-border:#e7e8ec;
+    --noc-bg:#0a0d12; --noc-surface:#11151d; --noc-border:rgba(255,255,255,0.09); --noc-text:#d7dce6; --noc-muted:#5d6678;
+    --c-gateway:#4ea8de; --c-rag:#9b87f5; --c-mcp:#ff7a45; --c-gate:#2dd4a8; --c-audit:#8b94a6; --c-err:#e5484d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--noc-bg);color:var(--topbar-text);height:100vh;height:100dvh;overflow:hidden;}
+
+  .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--topbar-border);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .topbar-left{display:flex;flex-direction:column;gap:2px;}
+  .topbar-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+  .topbar-sub{font-size:11px;color:var(--topbar-muted);}
+  .status-pill{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:600;padding:5px 11px;border-radius:20px;border:1px solid rgba(45,212,168,0.4);background:rgba(45,212,168,0.1);color:var(--c-gate);}
+  .status-pill.err{border-color:rgba(229,72,77,0.5);background:rgba(229,72,77,0.12);color:var(--c-err);}
+  .mobile-tabs{display:none;gap:6px;}
+  .mtab{font-family:'DM Sans';font-size:12px;font-weight:600;background:var(--noc-surface);border:1px solid var(--topbar-border);color:var(--topbar-muted);padding:7px 12px;border-radius:8px;cursor:pointer;position:relative;}
+  .mtab.active{color:#fff;border-color:var(--c-mcp);}
+  .mtab .badge{position:absolute;top:-6px;right:-6px;background:var(--c-mcp);color:#0b0e14;font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 5px;}
+
+  .shell{display:flex;height:calc(100vh - 57px);height:calc(100dvh - 57px);}
+  .panel{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+  .chat-panel{background:var(--chat-bg);border-right:1px solid var(--noc-border);}
+  .chat-head{padding:14px 20px;background:var(--chat-surface);border-bottom:1px solid var(--chat-border);display:flex;align-items:center;gap:10px;}
+  .chat-avatar{width:34px;height:34px;border-radius:50%;background:var(--chat-accent);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .chat-head-text b{display:block;font-size:13.5px;color:var(--chat-text);}
+  .chat-head-text span{font-size:11px;color:var(--chat-muted);}
+  .chat-messages{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;}
+  .bubble{max-width:85%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;animation:rise .25s ease;white-space:pre-wrap;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .bubble.agent{background:var(--chat-surface);color:var(--chat-text);border:1px solid var(--chat-border);align-self:flex-start;border-bottom-left-radius:4px;}
+  .bubble.user{background:var(--chat-accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+  .bubble.err{background:#fdeaea;color:#9a1d22;border:1px solid #f3c6c8;align-self:flex-start;}
+  .typing{align-self:flex-start;background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:14px;padding:11px 16px;display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--chat-muted);}
+  .typing .dots{display:flex;gap:4px;}
+  .typing .dots span{width:6px;height:6px;border-radius:50%;background:var(--chat-muted);animation:blink 1.2s infinite;}
+  .typing .dots span:nth-child(2){animation-delay:.2s;} .typing .dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+  .starters{padding:6px 16px;display:flex;flex-wrap:wrap;gap:8px;background:var(--chat-bg);}
+  .starter-btn{background:var(--chat-surface);border:1.5px solid var(--chat-accent);color:var(--chat-accent);font-size:12px;font-weight:600;padding:8px 13px;border-radius:20px;cursor:pointer;}
+  .starter-btn:hover{background:var(--chat-accent);color:#fff;}
+  .chat-inputbar{padding:12px 16px 10px;background:var(--chat-bg);display:flex;gap:8px;}
+  .chat-inputbar input{flex:1;border:1px solid var(--chat-border);background:var(--chat-surface);border-radius:20px;padding:11px 16px;font-size:13px;color:var(--chat-text);outline:none;}
+  .chat-inputbar input:focus{border-color:var(--chat-accent);}
+  .chat-inputbar input:disabled{opacity:.6;}
+  .send-btn{background:var(--chat-accent);color:#fff;border:none;border-radius:50%;width:42px;height:42px;cursor:pointer;font-size:15px;flex-shrink:0;}
+  .send-btn:disabled{opacity:.5;cursor:default;}
+  .restart-row{padding:0 16px 14px;text-align:center;}
+  .restart-link{font-size:11.5px;color:var(--chat-muted);text-decoration:underline;cursor:pointer;background:none;border:none;}
+
+  .orch-panel{background:var(--noc-bg);}
+  .orch-head{padding:14px 20px;border-bottom:1px solid var(--noc-border);}
+  .orch-head-top{display:flex;align-items:center;justify-content:space-between;}
+  .orch-head-left{display:flex;align-items:center;gap:10px;}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--c-gate);box-shadow:0 0 0 0 rgba(45,212,168,0.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,212,168,0.5);}70%{box-shadow:0 0 0 7px rgba(45,212,168,0);}100%{box-shadow:0 0 0 0 rgba(45,212,168,0);}}
+  .orch-head b{font-family:'Syne',sans-serif;font-size:13px;}
+  .orch-head-right{text-align:right;}
+  .lat-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--c-mcp);}
+  .lat-lbl{font-size:9.5px;color:var(--noc-muted);text-transform:uppercase;letter-spacing:.5px;}
+  .orch-subnote{font-size:10.5px;color:var(--noc-muted);margin-top:6px;}
+  .orch-log{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
+  .log-entry{background:var(--noc-surface);border:1px solid var(--noc-border);border-left:3px solid var(--c-mcp);border-radius:0 8px 8px 0;padding:10px 14px;animation:rise .3s ease;}
+  .log-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px;}
+  .log-type{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .log-ms{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--noc-muted);white-space:nowrap;}
+  .log-label{font-size:12.5px;font-weight:600;color:var(--noc-text);}
+  .log-detail{font-size:11.5px;color:var(--noc-muted);font-family:'DM Mono',monospace;margin-top:2px;white-space:pre-wrap;word-break:break-word;}
+  .orch-empty{color:var(--noc-muted);font-size:12px;text-align:center;padding:40px 10px;}
+  .orch-legend{padding:10px 18px 14px;border-top:1px solid var(--noc-border);display:flex;gap:10px;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--noc-muted);}
+  .leg .dot{width:7px;height:7px;border-radius:50%;}
+
+  @media (max-width:900px){
+    .mobile-tabs{display:flex;}
+    .shell{position:relative;}
+    .panel{position:absolute;inset:0;display:none;}
+    .panel.mobile-active{display:flex;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">Agente Real · Claude decide as ferramentas</div>
+    <div class="topbar-sub">Sem roteiro fixo — tool-use de verdade via API. Só funciona no preview de artifacts.</div>
+  </div>
+  <span class="status-pill" id="statusPill">🟢 sessão pronta</span>
+  <div class="mobile-tabs">
+    <button class="mtab active" id="mtab-chat" onclick="switchMobile('chat')">💬 Chat</button>
+    <button class="mtab" id="mtab-orch" onclick="switchMobile('orch')">⚙️ Orquestração<span class="badge" id="mtab-badge" style="display:none">0</span></button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="panel chat-panel mobile-active" id="panel-chat">
+    <div class="chat-head">
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-head-text"><b>Agente de Checkout Veicular</b><span>Bradesco · raciocínio real (claude-sonnet-4-6)</span></div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="starters" id="starters"></div>
+    <div class="chat-inputbar">
+      <input type="text" id="chatInput" placeholder="Digite livremente — sem botões, é conversa real…" onkeydown="if(event.key==='Enter')handleSend()">
+      <button class="send-btn" id="sendBtn" onclick="handleSend()">➤</button>
+    </div>
+    <div class="restart-row"><button class="restart-link" onclick="restart()">↺ nova conversa</button></div>
+  </div>
+
+  <div class="panel orch-panel" id="panel-orch">
+    <div class="orch-head">
+      <div class="orch-head-top">
+        <div class="orch-head-left"><span class="pulse"></span><b>Painel de Orquestração</b></div>
+        <div class="orch-head-right"><div class="lat-val" id="latVal">0 ms</div><div class="lat-lbl">latência acumulada</div></div>
+      </div>
+      <div class="orch-subnote">Latência do AI Gateway é medida de verdade (round-trip real). Ferramentas são locais/sintéticas.</div>
+    </div>
+    <div class="orch-log" id="orchLog"><div class="orch-empty">Aguardando início da conversa…</div></div>
+    <div class="orch-legend">
+      <div class="leg"><span class="dot" style="background:var(--c-gateway)"></span>AI Gateway (real)</div>
+      <div class="leg"><span class="dot" style="background:var(--c-rag)"></span>RAG</div>
+      <div class="leg"><span class="dot" style="background:var(--c-mcp)"></span>MCP Tool</div>
+      <div class="leg"><span class="dot" style="background:var(--c-gate)"></span>Gate de Política</div>
+      <div class="leg"><span class="dot" style="background:var(--c-audit)"></span>Auditoria</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODEL = 'claude-sonnet-4-6';
+const MAX_TOKENS = 1000;
+const MAX_TOOL_ROUNDS = 6;
+
+const COLORS = {gateway:'var(--c-gateway)', rag:'var(--c-rag)', mcp:'var(--c-mcp)', gate:'var(--c-gate)', audit:'var(--c-audit)'};
+const LABELS = {gateway:'AI Gateway', rag:'RAG', mcp:'MCP Tool', gate:'Gate de Política', audit:'Auditoria'};
+
+const SYSTEM_PROMPT = `Você é o Agente de Checkout Veicular do Bradesco. Ajuda o cliente a organizar a compra/pagamento de um veículo: dados do veículo, IPVA, licenciamento, emplacamento, financiamento (CaaS/LaaS) e pagamento.
+
+Regras:
+- Responda sempre em português do Brasil, de forma natural e objetiva (no máximo 3-4 frases por mensagem, pois há limite de tokens).
+- Use as ferramentas disponíveis para obter dados — nunca invente valor de veículo, alíquota de imposto ou parcela.
+- Se faltar placa e UF, pergunte antes de chamar consultar_veiculo.
+- Antes de qualquer executar_pagamento, você DEVE chamar verificar_gate_politica primeiro. Só execute o pagamento se aprovado=true; se for false, explique que precisa de validação manual e não execute.
+- Depois de calcular tributos, ofereça emplacamento via agendar_emplacamento quando fizer sentido.
+- Seja proativo: depois de ter os dados, sugira o próximo passo em vez de só listar números.`;
+
+const TOOLS = [
+  { name:"consultar_veiculo", description:"Consulta dados sintéticos do veículo (modelo, ano, valor FIPE) a partir da placa e UF.",
+    input_schema:{ type:"object", properties:{ placa:{type:"string"}, uf:{type:"string", description:"sigla do estado, ex: SP"} }, required:["placa","uf"] } },
+  { name:"consultar_regra_tributaria", description:"Calcula IPVA, licenciamento e taxa (transferência ou emplacamento inicial) para uma UF, considerando se o veículo é elétrico (incentivo) ou a combustão.",
+    input_schema:{ type:"object", properties:{ uf:{type:"string"}, tipo_veiculo:{type:"string", enum:["combustao","eletrico"]}, valor_fipe:{type:"number"}, zero_km:{type:"boolean", description:"true = veículo novo (primeiro registro); false = transferência de usado"} }, required:["uf","tipo_veiculo","valor_fipe"] } },
+  { name:"simular_financiamento", description:"Simula parcela de financiamento (CaaS/LaaS) para um valor e número de parcelas.",
+    input_schema:{ type:"object", properties:{ valor:{type:"number"}, parcelas:{type:"number"} }, required:["valor","parcelas"] } },
+  { name:"verificar_gate_politica", description:"Verifica deterministicamente (não é decisão do modelo) se um valor pode ser aprovado automaticamente. Limite: R$80.000. Sempre chamar antes de executar_pagamento.",
+    input_schema:{ type:"object", properties:{ valor_total:{type:"number"} }, required:["valor_total"] } },
+  { name:"executar_pagamento", description:"Executa o pagamento (veículo ou tributo) — só deve ser chamada após verificar_gate_politica retornar aprovado=true.",
+    input_schema:{ type:"object", properties:{ tipo:{type:"string", enum:["veiculo","tributo"]}, valor:{type:"number"}, destinatario:{type:"string"} }, required:["tipo","valor","destinatario"] } },
+  { name:"agendar_emplacamento", description:"Agenda a vistoria/emplacamento no DETRAN da UF informada.",
+    input_schema:{ type:"object", properties:{ uf:{type:"string"}, placa:{type:"string"} }, required:["uf","placa"] } }
+];
+
+const STARTERS = [
+  "Comprei um carro, quero organizar o pagamento",
+  "Quanto custa emplacar um carro elétrico em SP?",
+  "Quero simular financiamento de um carro de R$90.000"
+];
+
+let messages = [];
+let totalLatency = 0;
+let eventCount = 0;
+let rounds = 0;
+let busy = false;
+
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e; }
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function addBubble(text, who){
+  const wrap = document.getElementById('chatMessages');
+  wrap.appendChild(el('div', 'bubble '+who, text));
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function showThinking(label){
+  hideThinking();
+  const wrap = document.getElementById('chatMessages');
+  const t = el('div','typing', `<span class="dots"><span></span><span></span><span></span></span> ${label}`);
+  t.id='typingIndicator'; wrap.appendChild(t); wrap.scrollTop=wrap.scrollHeight;
+}
+function hideThinking(){ const t=document.getElementById('typingIndicator'); if(t) t.remove(); }
+
+function logEvent(ev){
+  const log = document.getElementById('orchLog');
+  const empty = log.querySelector('.orch-empty'); if(empty) empty.remove();
+  const entry = el('div','log-entry');
+  entry.style.borderLeftColor = COLORS[ev.type];
+  const top = el('div','log-top');
+  const typeSpan = el('span','log-type', LABELS[ev.type]); typeSpan.style.color = COLORS[ev.type];
+  const msSpan = el('span','log-ms', ev.ms+' ms');
+  top.appendChild(typeSpan); top.appendChild(msSpan);
+  entry.appendChild(top);
+  entry.appendChild(el('div','log-label', ev.label));
+  entry.appendChild(el('div','log-detail', ev.detail));
+  log.appendChild(entry); log.scrollTop = log.scrollHeight;
+
+  totalLatency += ev.ms; eventCount += 1;
+  document.getElementById('latVal').textContent = totalLatency.toLocaleString('pt-BR')+' ms';
+  const badge = document.getElementById('mtab-badge');
+  badge.style.display='inline-block'; badge.textContent = eventCount;
+}
+
+function setStatus(ok, text){
+  const pill = document.getElementById('statusPill');
+  pill.classList.toggle('err', !ok);
+  pill.textContent = (ok ? '🟢 ' : '🔴 ') + text;
+}
+
+// ---- Execução local das "ferramentas" (sintéticas, sem rede real) ----
+async function executeTool(name, input){
+  const start = performance.now();
+  await delay(250 + Math.random()*500);
+  let type='mcp', detail='', result;
+
+  if(name === 'consultar_veiculo'){
+    const models = [['Volkswagen Polo',2023],['Hyundai HB20',2022],['Fiat Pulse',2023],['Chevrolet Onix',2024],['Toyota Corolla',2023],['BYD Dolphin',2026]];
+    const seed = hashStr((input.placa||'XXX0000')+(input.uf||''));
+    const m = models[seed % models.length];
+    const fipe = 45000 + (seed % 95000);
+    result = { modelo: m[0]+' '+m[1], placa: input.placa, uf: input.uf, valor_fipe: Math.round(fipe/100)*100 };
+    detail = 'MCP → RENAVAM / FIPE (sintético)';
+  } else if(name === 'consultar_regra_tributaria'){
+    type='rag';
+    const rates = {SP:4, RJ:4, MG:3};
+    let pct = rates[input.uf] || 4;
+    if(input.tipo_veiculo === 'eletrico') pct = Math.max(1, Math.round(pct/3));
+    const ipva = Math.round(input.valor_fipe * pct/100);
+    const licensing = 150 + (hashStr(input.uf||'')%100);
+    const taxa = input.zero_km ? 200+(hashStr((input.uf||'')+'0km')%100) : 120+(hashStr((input.uf||'')+'usado')%150);
+    result = { ipva_pct: pct, ipva_valor: ipva, licenciamento: licensing, taxa, total_tributos: ipva+licensing+taxa, incentivo_eletrico: input.tipo_veiculo==='eletrico' };
+    detail = 'RAG → regra_tributaria_'+(input.uf||'??')+'_2026 · similaridade 0.9'+(seedDigit(input.uf));
+  } else if(name === 'simular_financiamento'){
+    const parcela = Math.round(input.valor*1.15/input.parcelas);
+    result = { parcela_mensal: parcela, parcelas: input.parcelas, taxa_am: '1.19%' };
+    detail = 'MCP → CaaS/LaaS · motor de score';
+  } else if(name === 'verificar_gate_politica'){
+    type='gate';
+    const aprovado = input.valor_total <= 80000;
+    result = { aprovado, limite:80000, motivo: aprovado ? 'dentro do limite de auto-aprovação' : 'acima do limite — requer validação manual' };
+    detail = 'Gate determinístico local — não é decisão do modelo';
+  } else if(name === 'executar_pagamento'){
+    const protocolo = 'BRD-2026-'+(10000+Math.floor(Math.random()*89999));
+    result = { status:'confirmado', protocolo, tipo: input.tipo, valor: input.valor };
+    detail = 'MCP → liquidação ('+input.tipo+')';
+  } else if(name === 'agendar_emplacamento'){
+    const protocolo = 'DETRAN-'+(input.uf||'??')+'-'+(10000+Math.floor(Math.random()*89999));
+    result = { protocolo, data_vistoria:'12/07', uf: input.uf };
+    detail = 'MCP → DETRAN-'+input.uf;
+  } else {
+    result = { erro:'ferramenta desconhecida: '+name };
+    type='audit'; detail='Chamada não reconhecida';
+  }
+
+  const ms = Math.round(performance.now()-start);
+  logEvent({type, label:name, detail: detail+'\\nargs: '+JSON.stringify(input), ms});
+  return result;
+}
+function seedDigit(uf){ return (hashStr(uf||'')%9); }
+
+// ---- Chamada real à API da Claude ----
+async function callClaude(msgs){
+  const t0 = performance.now();
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS,
+      messages: msgs
+    })
+  });
+  const elapsed = Math.round(performance.now()-t0);
+  if(!res.ok){ throw new Error('HTTP '+res.status); }
+  const data = await res.json();
+  logEvent({type:'gateway', label:'Claude API · '+MODEL, detail:'POST /v1/messages · round-trip real, stop_reason='+data.stop_reason, ms: elapsed});
+  return data;
+}
+
+// ---- Loop agêntico ----
+async function runTurn(){
+  let data;
+  try{
+    showThinking('pensando…');
+    data = await callClaude(messages);
+  }catch(err){
+    hideThinking();
+    setStatus(false, 'falha na API');
+    addBubble('⚠️ Não consegui falar com a API da Claude aqui. Esse modo "agente real" só funciona dentro do preview de artifacts do Claude.ai — publicado sozinho (ex: GitHub Pages) essa chamada não tem como se autenticar. ('+err.message+')', 'err');
+    setInputEnabled(true);
+    return;
+  }
+  hideThinking();
+
+  const blocks = data.content || [];
+  const textBlocks = blocks.filter(b=>b.type==='text');
+  const toolUses = blocks.filter(b=>b.type==='tool_use');
+
+  textBlocks.forEach(b=>{ if(b.text && b.text.trim()) addBubble(b.text, 'agent'); });
+
+  if(toolUses.length && rounds < MAX_TOOL_ROUNDS){
+    rounds++;
+    messages.push({ role:'assistant', content: blocks });
+    showThinking('executando '+toolUses.length+' ferramenta(s)…');
+    const toolResults = [];
+    for(const tu of toolUses){
+      const result = await executeTool(tu.name, tu.input);
+      toolResults.push({ type:'tool_result', tool_use_id: tu.id, content: JSON.stringify(result) });
+    }
+    hideThinking();
+    messages.push({ role:'user', content: toolResults });
+    await runTurn();
+  } else {
+    rounds = 0;
+    setInputEnabled(true);
+  }
+}
+
+function setInputEnabled(on){
+  document.getElementById('chatInput').disabled = !on;
+  document.getElementById('sendBtn').disabled = !on;
+  busy = !on;
+}
+
+async function sendUserMessage(text){
+  if(busy) return;
+  document.getElementById('starters').innerHTML='';
+  addBubble(text, 'user');
+  messages.push({ role:'user', content: text });
+  rounds = 0;
+  setInputEnabled(false);
+  await runTurn();
+}
+
+function handleSend(){
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim();
+  if(!val || busy) return;
+  input.value='';
+  sendUserMessage(val);
+}
+
+function renderStarters(){
+  const box = document.getElementById('starters'); box.innerHTML='';
+  STARTERS.forEach(s=>{
+    const b = el('button','starter-btn', s);
+    b.onclick = ()=> sendUserMessage(s);
+    box.appendChild(b);
+  });
+}
+
+function switchMobile(view){
+  document.getElementById('panel-chat').classList.toggle('mobile-active', view==='chat');
+  document.getElementById('panel-orch').classList.toggle('mobile-active', view==='orch');
+  document.getElementById('mtab-chat').classList.toggle('active', view==='chat');
+  document.getElementById('mtab-orch').classList.toggle('active', view==='orch');
+}
+
+function restart(){
+  messages = []; rounds = 0; totalLatency = 0; eventCount = 0;
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('orchLog').innerHTML='<div class="orch-empty">Aguardando início da conversa…</div>';
+  document.getElementById('latVal').textContent = '0 ms';
+  document.getElementById('mtab-badge').style.display='none';
+  setStatus(true, 'sessão pronta');
+  setInputEnabled(true);
+  addBubble('Olá! Sou o agente de Checkout Veicular do Bradesco — dessa vez raciocinando de verdade via API da Claude, sem roteiro fixo. Me conta o que você precisa.', 'agent');
+  renderStarters();
+}
+
+restart();
+</script>
+</body>
+</html>

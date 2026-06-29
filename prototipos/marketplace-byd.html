@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo · Jornada Conversacional em Marketplace (BYD 0KM)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --topbar-bg:#0b0e14; --topbar-border:rgba(255,255,255,0.08); --topbar-text:#e9edf4; --topbar-muted:#7c8699;
+    --ml-bg:#fff8d6; --ml-yellow:#FFE600; --ml-blue:#3483FA; --ml-surface:#ffffff; --ml-text:#1a1a1a; --ml-muted:#6b7280; --ml-border:#eee0a8;
+    --noc-bg:#0a0d12; --noc-surface:#11151d; --noc-border:rgba(255,255,255,0.09);
+    --noc-text:#d7dce6; --noc-muted:#5d6678;
+    --c-gateway:#4ea8de; --c-rag:#9b87f5; --c-mcp:#ff7a45; --c-gate:#2dd4a8; --c-audit:#8b94a6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--noc-bg);color:var(--topbar-text);height:100vh;height:100dvh;overflow:hidden;}
+
+  .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--topbar-border);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .topbar-left{display:flex;flex-direction:column;gap:2px;}
+  .topbar-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+  .topbar-sub{font-size:11px;color:var(--topbar-muted);}
+  .topbar-note{font-size:10.5px;color:var(--c-rag);font-family:'DM Mono',monospace;border:1px solid rgba(155,135,245,0.4);background:rgba(155,135,245,0.1);padding:5px 11px;border-radius:20px;}
+  .mobile-tabs{display:none;gap:6px;}
+  .mtab{font-family:'DM Sans';font-size:12px;font-weight:600;background:var(--noc-surface);border:1px solid var(--topbar-border);color:var(--topbar-muted);padding:7px 12px;border-radius:8px;cursor:pointer;position:relative;}
+  .mtab.active{color:#fff;border-color:var(--c-mcp);}
+  .mtab .badge{position:absolute;top:-6px;right:-6px;background:var(--c-mcp);color:#0b0e14;font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 5px;}
+
+  .shell{display:flex;height:calc(100vh - 57px);height:calc(100dvh - 57px);}
+  .panel{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+  /* ===== MARKETPLACE PANEL (visão do cliente — sem marca Bradesco) ===== */
+  .ml-panel{background:var(--ml-bg);border-right:1px solid var(--noc-border);}
+  .ml-head{padding:14px 20px;background:var(--ml-yellow);display:flex;align-items:center;gap:10px;}
+  .ml-logo{width:30px;height:30px;border-radius:7px;background:var(--ml-text);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+  .ml-head-text b{display:block;font-size:13.5px;color:var(--ml-text);}
+  .ml-head-text span{font-size:11px;color:#5a5a40;}
+  .listing-card{margin:14px 20px 4px;background:var(--ml-surface);border:1px solid var(--ml-border);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:center;}
+  .listing-thumb{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg,#1a1a1a,#3483FA);flex-shrink:0;}
+  .listing-info b{display:block;font-size:12.5px;color:var(--ml-text);}
+  .listing-info span{font-size:11.5px;color:var(--ml-muted);}
+  .listing-price{margin-left:auto;font-weight:700;font-size:13px;color:var(--ml-text);}
+  .ml-messages{flex:1;overflow-y:auto;padding:12px 20px 18px;display:flex;flex-direction:column;gap:10px;}
+  .bubble{max-width:84%;padding:11px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;animation:rise .25s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .bubble.agent{background:var(--ml-surface);color:var(--ml-text);border:1px solid var(--ml-border);align-self:flex-start;border-bottom-left-radius:4px;}
+  .bubble.user{background:var(--ml-blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+  .typing{align-self:flex-start;background:var(--ml-surface);border:1px solid var(--ml-border);border-radius:14px;padding:11px 16px;display:flex;gap:4px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--ml-muted);animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+  .ml-replies{padding:8px 16px 6px;display:flex;flex-wrap:wrap;gap:8px;background:var(--ml-bg);}
+  .reply-hint{width:100%;font-size:11px;font-weight:600;color:var(--ml-blue);margin-bottom:2px;}
+  @keyframes glow{0%{box-shadow:0 0 0 0 rgba(52,131,250,0.5);}70%{box-shadow:0 0 0 9px rgba(52,131,250,0);}100%{box-shadow:0 0 0 0 rgba(52,131,250,0);}}
+  .reply-btn{background:var(--ml-surface);border:1.5px solid var(--ml-blue);color:var(--ml-blue);font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:20px;cursor:pointer;transition:all .15s;animation:glow 1.6s ease-out 2;}
+  .reply-btn:hover{background:var(--ml-blue);color:#fff;}
+  .ml-footer{padding:8px 16px 14px;text-align:center;}
+  .restart-link{font-size:11px;color:var(--ml-muted);text-decoration:underline;cursor:pointer;background:none;border:none;display:block;margin:0 auto 6px;}
+  .disclosure{font-size:9.5px;color:#9a9268;line-height:1.5;max-width:420px;margin:0 auto;}
+
+  /* ===== ORCHESTRATION PANEL (visão Bradesco — invisível ao cliente) ===== */
+  .orch-panel{background:var(--noc-bg);}
+  .orch-head{padding:14px 20px;border-bottom:1px solid var(--noc-border);}
+  .orch-head-top{display:flex;align-items:center;justify-content:space-between;}
+  .orch-head-left{display:flex;align-items:center;gap:10px;}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--c-gate);box-shadow:0 0 0 0 rgba(45,212,168,0.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,212,168,0.5);}70%{box-shadow:0 0 0 7px rgba(45,212,168,0);}100%{box-shadow:0 0 0 0 rgba(45,212,168,0);}}
+  .orch-head b{font-family:'Syne',sans-serif;font-size:13px;}
+  .orch-head-right{text-align:right;}
+  .lat-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--c-mcp);}
+  .lat-lbl{font-size:9.5px;color:var(--noc-muted);text-transform:uppercase;letter-spacing:.5px;}
+  .orch-subnote{font-size:10.5px;color:var(--noc-muted);margin-top:6px;}
+  .orch-log{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
+  .log-entry{background:var(--noc-surface);border:1px solid var(--noc-border);border-left:3px solid var(--c-mcp);border-radius:0 8px 8px 0;padding:10px 14px;animation:rise .3s ease;}
+  .log-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px;}
+  .log-type{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .log-ms{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--noc-muted);white-space:nowrap;}
+  .log-label{font-size:12.5px;font-weight:600;color:var(--noc-text);}
+  .log-detail{font-size:11.5px;color:var(--noc-muted);font-family:'DM Mono',monospace;margin-top:2px;}
+  .orch-empty{color:var(--noc-muted);font-size:12px;text-align:center;padding:40px 10px;}
+  .orch-legend{padding:10px 18px 14px;border-top:1px solid var(--noc-border);display:flex;gap:10px;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--noc-muted);}
+  .leg .dot{width:7px;height:7px;border-radius:50%;}
+
+  @media (max-width:900px){
+    .mobile-tabs{display:flex;}
+    body{height:auto;overflow-y:auto;overflow-x:hidden;}
+    .shell{height:auto;display:block;}
+    .panel{position:static;height:auto;display:none;}
+    .panel.mobile-active{display:flex;}
+    .ml-messages, .orch-log{flex:none;max-height:none;overflow:visible;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">Jornada Conversacional em Marketplace · BYD 0KM</div>
+    <div class="topbar-sub">Mesma IA, mesma infraestrutura Bradesco — zero marca Bradesco visível ao cliente</div>
+  </div>
+  <div class="topbar-note">BaaS 100% white-label · invisible banking</div>
+  <div class="mobile-tabs">
+    <button class="mtab active" id="mtab-chat" onclick="switchMobile('chat')">💬 Marketplace</button>
+    <button class="mtab" id="mtab-orch" onclick="switchMobile('orch')">⚙️ Visão Bradesco<span class="badge" id="mtab-badge" style="display:none">0</span></button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="panel ml-panel mobile-active" id="panel-chat">
+    <div class="ml-head">
+      <div class="ml-logo">🛒</div>
+      <div class="ml-head-text"><b>Assistente de Compras</b><span>Marketplace · Loja Oficial BYD</span></div>
+    </div>
+    <div class="listing-card">
+      <div class="listing-thumb"></div>
+      <div class="listing-info"><b>BYD Dolphin Comfort 2026</b><span>100% elétrico · 301 km de autonomia</span></div>
+      <div class="listing-price">R$ 139.900</div>
+    </div>
+    <div class="ml-messages" id="chatMessages"></div>
+    <div class="ml-replies" id="chatReplies"></div>
+    <div class="ml-footer">
+      <button class="restart-link" onclick="restart()">↺ reiniciar demonstração</button>
+      <div class="disclosure">Crédito, tributos e emplacamento processados por Banco Bradesco S.A. — divulgação exigida mesmo em experiência 100% white-label.</div>
+    </div>
+  </div>
+
+  <div class="panel orch-panel" id="panel-orch">
+    <div class="orch-head">
+      <div class="orch-head-top">
+        <div class="orch-head-left"><span class="pulse"></span><b>Visão Bradesco (B2B2C)</b></div>
+        <div class="orch-head-right"><div class="lat-val" id="latVal">0 ms</div><div class="lat-lbl">latência acumulada</div></div>
+      </div>
+      <div class="orch-subnote">Tudo abaixo é invisível na experiência do marketplace — visível apenas para o backend Bradesco.</div>
+    </div>
+    <div class="orch-log" id="orchLog"><div class="orch-empty">Aguardando início da jornada…</div></div>
+    <div class="orch-legend">
+      <div class="leg"><span class="dot" style="background:var(--c-gateway)"></span>AI Gateway</div>
+      <div class="leg"><span class="dot" style="background:var(--c-rag)"></span>RAG</div>
+      <div class="leg"><span class="dot" style="background:var(--c-mcp)"></span>MCP Tool</div>
+      <div class="leg"><span class="dot" style="background:var(--c-gate)"></span>Gate de Política</div>
+      <div class="leg"><span class="dot" style="background:var(--c-audit)"></span>Auditoria</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = {gateway:'var(--c-gateway)', rag:'var(--c-rag)', mcp:'var(--c-mcp)', gate:'var(--c-gate)', audit:'var(--c-audit)'};
+const LABELS = {gateway:'AI Gateway', rag:'RAG', mcp:'MCP Tool', gate:'Gate de Política', audit:'Auditoria'};
+
+const STEPS = {
+  start: {
+    agent: ["Vi que você está de olho no BYD Dolphin Comfort 2026 (100% elétrico) por R$ 139.900, na Loja Oficial BYD aqui do marketplace 👀 Posso calcular a forma de pagamento completa — financiamento, impostos e emplacamento — direto aqui no chat?"],
+    events: [{type:'gateway', label:'Chamada autenticada via parceiro', detail:'Marketplace → BaaS Bradesco · OAuth2 + mTLS (B2B2B2C)', ms:160}],
+    replies: [{label:'Sim, quero ver as opções', next:'financing_sim'}]
+  },
+  financing_sim: {
+    agent: ["Pelo seu cadastro, o registro seria em Minas Gerais (MG). Simulei o financiamento do veículo: em 60x, a parcela fica em R$ 3.380/mês (taxa 1,19% a.m. — linha especial para veículos elétricos)."],
+    events: [{type:'mcp', label:'simular_financiamento', detail:'MCP → LaaS · motor de score + linha EV', ms:430}],
+    replies: [
+      {label:'Quero seguir com esse financiamento', next:'tax_calc'},
+      {label:'Prefiro pagar o veículo à vista', next:'tax_calc'}
+    ]
+  },
+  tax_calc: {
+    agent: [
+      "Boa notícia: como é um veículo 100% elétrico, MG aplica alíquota reduzida de IPVA (incentivo a elétricos).",
+      "Resumo da parte de impostos e emplacamento (paga separadamente): IPVA incentivado (1%, em vez de 3%) R$ 1.399 — uma economia de R$ 2.798 — + licenciamento R$ 172 + emplacamento inicial R$ 254 → Total R$ 1.825."
+    ],
+    events: [
+      {type:'rag', label:'regra_tributaria_MG_2026_EV', detail:'RAG → incentivo IPVA veículo elétrico · similaridade 0.93', ms:101},
+      {type:'mcp', label:'calcular_tributos_zero_km', detail:'MCP → SEFAZ-MG (sintético) · primeiro registro', ms:540}
+    ],
+    replies: [{label:'Fechar negócio', next:'gate_check'}]
+  },
+  gate_check: {
+    agent: ["Perfeito — fechando tudo agora. Como o valor está dentro do limite de aprovação automática, sigo sem precisar de validação manual."],
+    events: [{type:'gate', label:'Gate de Política', detail:'Valor dentro do limite → aprovado automaticamente', ms:12}],
+    auto: 'processing'
+  },
+  processing: {
+    agent: ["Processando contrato de financiamento, pagamento dos tributos e agendamento do emplacamento…"],
+    events: [
+      {type:'mcp', label:'formalizar_contrato_LaaS', detail:'MCP → assinatura digital + liberação do crédito', ms:980},
+      {type:'mcp', label:'pagar_tributo_SEFAZ', detail:'MCP → convênio de arrecadação SEFAZ-MG', ms:1290},
+      {type:'mcp', label:'agendar_emplacamento_DETRAN', detail:'MCP → DETRAN-MG · primeiro registro (0KM)', ms:860}
+    ],
+    auto: 'summary'
+  },
+  summary: {
+    agent: ["Tudo certo! ✅ Financiamento aprovado (contrato LAAS-2026-50214), tributos pagos (protocolo SEFAZ-MG-30877) e emplacamento inicial agendado para 16/07. Você acompanha tudo por aqui, sem precisar abrir outro app."],
+    events: [{type:'audit', label:'Trilha de auditoria registrada', detail:'Jornada completa · log imutável · invisível na experiência do parceiro', ms:35}],
+    replies: [{label:'↺ Reiniciar demonstração', next:'start', isRestart:true}]
+  }
+};
+
+let totalLatency = 0;
+let eventCount = 0;
+
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e; }
+
+function addBubble(text, who){
+  const wrap = document.getElementById('chatMessages');
+  wrap.appendChild(el('div', 'bubble '+who, text));
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function showTyping(){
+  const wrap = document.getElementById('chatMessages');
+  const t = el('div','typing','<span></span><span></span><span></span>');
+  t.id='typingIndicator'; wrap.appendChild(t); wrap.scrollTop=wrap.scrollHeight;
+}
+function hideTyping(){ const t=document.getElementById('typingIndicator'); if(t) t.remove(); }
+
+function addLog(ev){
+  const log = document.getElementById('orchLog');
+  const empty = log.querySelector('.orch-empty'); if(empty) empty.remove();
+  const entry = el('div','log-entry');
+  entry.style.borderLeftColor = COLORS[ev.type];
+  const top = el('div','log-top');
+  const typeSpan = el('span','log-type', LABELS[ev.type]); typeSpan.style.color = COLORS[ev.type];
+  const msSpan = el('span','log-ms', ev.ms+' ms');
+  top.appendChild(typeSpan); top.appendChild(msSpan);
+  entry.appendChild(top);
+  entry.appendChild(el('div','log-label', ev.label));
+  entry.appendChild(el('div','log-detail', ev.detail));
+  log.appendChild(entry); log.scrollTop = log.scrollHeight;
+
+  totalLatency += ev.ms; eventCount += 1;
+  document.getElementById('latVal').textContent = totalLatency.toLocaleString('pt-BR')+' ms';
+  const badge = document.getElementById('mtab-badge');
+  badge.style.display='inline-block'; badge.textContent = eventCount;
+}
+
+function renderReplies(replies){
+  const box = document.getElementById('chatReplies'); box.innerHTML='';
+  if(!replies || !replies.length) return;
+  const hint = el('div','reply-hint','👉 toque numa opção para continuar');
+  box.appendChild(hint);
+  replies.forEach(r=>{
+    const b = el('button','reply-btn', r.label);
+    b.onclick = ()=> r.isRestart ? restart() : goTo(r.next, r.label);
+    box.appendChild(b);
+  });
+}
+
+function goTo(stepId, userText){
+  if(userText) addBubble(userText, 'user');
+  document.getElementById('chatReplies').innerHTML='';
+  const step = STEPS[stepId];
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    step.agent.forEach((msg,i)=>{ setTimeout(()=>addBubble(msg,'agent'), i*450); });
+    step.events.forEach((ev,i)=>{ setTimeout(()=>addLog(ev), 300 + i*450); });
+    const settleDelay = 350 + (step.agent.length*450) + (step.events.length*150);
+    setTimeout(()=>{
+      if(step.auto){ goTo(step.auto, null); }
+      else { renderReplies(step.replies); }
+    }, settleDelay);
+  }, 550);
+}
+
+function switchMobile(view){
+  document.getElementById('panel-chat').classList.toggle('mobile-active', view==='chat');
+  document.getElementById('panel-orch').classList.toggle('mobile-active', view==='orch');
+  document.getElementById('mtab-chat').classList.toggle('active', view==='chat');
+  document.getElementById('mtab-orch').classList.toggle('active', view==='orch');
+}
+
+function restart(){
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('chatReplies').innerHTML='';
+  document.getElementById('orchLog').innerHTML='<div class="orch-empty">Aguardando início da jornada…</div>';
+  totalLatency = 0; eventCount = 0;
+  document.getElementById('latVal').textContent = '0 ms';
+  document.getElementById('mtab-badge').style.display='none';
+  goTo('start', null);
+}
+
+restart();
+</script>
+</body>
+</html>

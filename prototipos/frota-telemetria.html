@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Frota · Telemetria + Manutenção Preditiva</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --topbar-bg:#0b0e14; --topbar-border:rgba(255,255,255,0.08); --topbar-text:#e9edf4; --topbar-muted:#7c8699;
+    --db-bg:#f4f5f7; --db-surface:#ffffff; --db-border:#e6e8ec; --db-text:#1a1d27; --db-muted:#6b7280;
+    --brand:#CC092F; --brand-soft:#fdeaec;
+    --st-ok:#0f9d72; --st-ok-soft:#e3f8f1; --st-warn:#d97706; --st-warn-soft:#fef3e2; --st-urgent:#dc2626; --st-urgent-soft:#fdeaea;
+    --noc-bg:#0a0d12; --noc-surface:#11151d; --noc-border:rgba(255,255,255,0.09); --noc-text:#d7dce6; --noc-muted:#5d6678;
+    --c-gateway:#4ea8de; --c-pred:#9b87f5; --c-mcp:#ff7a45; --c-gate:#2dd4a8; --c-audit:#8b94a6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--noc-bg);color:var(--topbar-text);}
+
+  .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--topbar-border);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .topbar-left{display:flex;flex-direction:column;gap:2px;}
+  .topbar-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+  .topbar-sub{font-size:11px;color:var(--topbar-muted);}
+  .mobile-tabs{display:none;gap:6px;}
+  .mtab{font-family:'DM Sans';font-size:12px;font-weight:600;background:var(--noc-surface);border:1px solid var(--topbar-border);color:var(--topbar-muted);padding:7px 12px;border-radius:8px;cursor:pointer;position:relative;}
+  .mtab.active{color:#fff;border-color:var(--c-mcp);}
+  .mtab .badge{position:absolute;top:-6px;right:-6px;background:var(--c-mcp);color:#0b0e14;font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 5px;}
+
+  .shell{display:flex;}
+  .panel{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+  /* ===== DASHBOARD (visão da locadora) ===== */
+  .db-panel{background:var(--db-bg);color:var(--db-text);border-right:1px solid var(--noc-border);}
+  .db-head{padding:16px 22px;background:var(--db-surface);border-bottom:1px solid var(--db-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .db-head-co b{font-family:'Syne',sans-serif;font-size:15px;display:block;}
+  .db-head-co span{font-size:11.5px;color:var(--db-muted);}
+  .powered{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--brand);font-family:'DM Mono',monospace;border:1px solid var(--brand-soft);background:var(--brand-soft);padding:5px 11px;border-radius:20px;font-weight:700;}
+
+  .db-body{padding:20px 22px 40px;overflow-y:auto;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+  @media (max-width:760px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+  .kpi{background:var(--db-surface);border:1px solid var(--db-border);border-radius:12px;padding:16px;}
+  .kpi-lbl{font-size:10.5px;color:var(--db-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .kpi-val{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;}
+  .kpi-sub{font-size:11px;color:var(--db-muted);margin-top:3px;}
+  .kpi.alert .kpi-val{color:var(--st-urgent);}
+
+  .ask-bar{background:var(--db-surface);border:1px solid var(--db-border);border-radius:12px;padding:14px 16px;margin-bottom:22px;}
+  .ask-row{display:flex;gap:8px;margin-bottom:10px;}
+  .ask-row input{flex:1;border:1px solid var(--db-border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;}
+  .ask-row input:focus{border-color:var(--brand);}
+  .ask-btn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .ask-chips{display:flex;gap:7px;flex-wrap:wrap;}
+  .ask-chip{font-size:11.5px;background:#f4f5f7;border:1px solid var(--db-border);border-radius:16px;padding:6px 12px;cursor:pointer;color:var(--db-text);}
+  .ask-chip:hover{border-color:var(--brand);color:var(--brand);}
+  .ask-answer{margin-top:12px;background:#f9fafb;border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:11px 14px;font-size:12.5px;line-height:1.6;display:none;}
+  .ask-answer.show{display:block;}
+
+  table.fleet{width:100%;border-collapse:collapse;background:var(--db-surface);border:1px solid var(--db-border);border-radius:12px;overflow:hidden;font-size:12.5px;}
+  table.fleet th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--db-muted);padding:10px 14px;background:#fafbfc;border-bottom:1px solid var(--db-border);}
+  table.fleet td{padding:11px 14px;border-bottom:1px solid var(--db-border);cursor:pointer;}
+  table.fleet tr:last-child td{border-bottom:none;}
+  table.fleet tr:hover td{background:#fafbfc;}
+  table.fleet tr.sel td{background:var(--brand-soft);}
+  .st-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:12px;}
+  .st-badge.ok{background:var(--st-ok-soft);color:var(--st-ok);}
+  .st-badge.warn{background:var(--st-warn-soft);color:var(--st-warn);}
+  .st-badge.urgent{background:var(--st-urgent-soft);color:var(--st-urgent);}
+  .risk-bar{width:60px;height:6px;border-radius:4px;background:#e6e8ec;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px;}
+  .risk-bar i{display:block;height:100%;}
+  .table-note{font-size:11px;color:var(--db-muted);margin-top:8px;}
+
+  .detail{margin-top:20px;background:var(--db-surface);border:1px solid var(--db-border);border-radius:14px;padding:20px;display:none;}
+  .detail.show{display:block;animation:rise .25s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+  .detail-head b{font-family:'Syne',sans-serif;font-size:15px;display:block;}
+  .detail-head span{font-size:11.5px;color:var(--db-muted);}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media (max-width:760px){ .detail-grid{grid-template-columns:1fr;} }
+  .dcard{border:1px solid var(--db-border);border-radius:10px;padding:14px;}
+  .dcard-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--db-muted);margin-bottom:7px;font-weight:700;}
+  .dcard-main{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+  .dcard-sub{font-size:11.5px;color:var(--db-muted);line-height:1.5;}
+
+  .invoice{border:1px dashed var(--db-border);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+  .inv-row{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;}
+  .inv-row.tot{border-top:1.5px solid var(--db-text);margin-top:4px;padding-top:10px;font-weight:700;}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{border:none;border-radius:8px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .btn-brand{background:var(--brand);color:#fff;}
+  .btn-ghost{background:#fff;border:1.5px solid var(--db-border);color:var(--db-text);}
+  .status-line{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--db-muted);margin-top:10px;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--st-warn);animation:wait 1.3s infinite;}
+  @keyframes wait{0%,100%{opacity:.3;}50%{opacity:1;}}
+  .status-dot.ok{background:var(--st-ok);animation:none;}
+
+  /* ===== ORQUESTRAÇÃO (visão Bradesco) ===== */
+  .orch-panel{background:var(--noc-bg);}
+  .orch-head{padding:14px 20px;border-bottom:1px solid var(--noc-border);}
+  .orch-head-top{display:flex;justify-content:space-between;align-items:center;}
+  .orch-head-left{display:flex;align-items:center;gap:10px;}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--c-gate);box-shadow:0 0 0 0 rgba(45,212,168,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,212,168,.5);}70%{box-shadow:0 0 0 7px rgba(45,212,168,0);}100%{box-shadow:0 0 0 0 rgba(45,212,168,0);}}
+  .orch-head b{font-family:'Syne',sans-serif;font-size:13px;}
+  .lat-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--c-mcp);text-align:right;}
+  .lat-lbl{font-size:9px;color:var(--noc-muted);text-transform:uppercase;letter-spacing:.5px;text-align:right;}
+  .orch-subnote{font-size:10.5px;color:var(--noc-muted);margin-top:6px;}
+  .orch-log{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px;}
+  .log-entry{background:var(--noc-surface);border:1px solid var(--noc-border);border-left:3px solid var(--c-mcp);border-radius:0 8px 8px 0;padding:9px 13px;animation:rise .3s ease;}
+  .log-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
+  .log-type{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .log-ms{font-family:'DM Mono',monospace;font-size:10px;color:var(--noc-muted);white-space:nowrap;}
+  .log-label{font-size:12px;font-weight:600;color:var(--noc-text);}
+  .log-detail{font-size:11px;color:var(--noc-muted);font-family:'DM Mono',monospace;margin-top:2px;}
+  .orch-empty{color:var(--noc-muted);font-size:12px;text-align:center;padding:36px 10px;}
+  .orch-legend{padding:10px 18px 14px;border-top:1px solid var(--noc-border);display:flex;gap:9px;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--noc-muted);}
+  .leg .dot{width:7px;height:7px;border-radius:50%;}
+
+  @media (min-width:901px){
+    .shell{height:100vh;}
+    .db-body, .orch-log{max-height:none;}
+  }
+  @media (max-width:900px){
+    .mobile-tabs{display:flex;}
+    .panel{display:none;}
+    .panel.mobile-active{display:flex;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">Painel de Frota · Telemetria + Manutenção Preditiva</div>
+    <div class="topbar-sub">Visão da locadora (powered by Bradesco BaaS) + visão técnica de orquestração</div>
+  </div>
+  <div class="mobile-tabs">
+    <button class="mtab active" id="mtab-db" onclick="switchMobile('db')">🚚 Frota</button>
+    <button class="mtab" id="mtab-orch" onclick="switchMobile('orch')">⚙️ Orquestração<span class="badge" id="mtab-badge" style="display:none">0</span></button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="panel db-panel mobile-active" id="panel-db">
+    <div class="db-head">
+      <div class="db-head-co"><b>VeloCorp Frotas</b><span>Gestão de frota corporativa</span></div>
+      <div class="powered">⚡ Powered by Bradesco BaaS</div>
+    </div>
+    <div class="db-body">
+
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-lbl">Frota monitorada</div><div class="kpi-val">1.842</div><div class="kpi-sub">veículos · telemetria via Google Fleet Engine</div></div>
+        <div class="kpi alert"><div class="kpi-lbl">Alertas de manutenção</div><div class="kpi-val">187</div><div class="kpi-sub">10,2% da frota · modelo preditivo</div></div>
+        <div class="kpi"><div class="kpi-lbl">Prêmio de seguro (mês)</div><div class="kpi-val">R$ 612,4k</div><div class="kpi-sub">usage-based · Bradesco Seguros</div></div>
+        <div class="kpi"><div class="kpi-lbl">Manutenção prevista (30d)</div><div class="kpi-val">R$ 248,9k</div><div class="kpi-sub">custo estimado pelo modelo</div></div>
+      </div>
+
+      <div class="ask-bar">
+        <div class="ask-row">
+          <input type="text" id="askInput" placeholder="Pergunte sobre sua frota…" onkeydown="if(event.key==='Enter')askFleet()">
+          <button class="ask-btn" onclick="askFleet()">Perguntar</button>
+        </div>
+        <div class="ask-chips">
+          <span class="ask-chip" onclick="askFleet('Quais veículos precisam de atenção essa semana?')">Quais veículos precisam de atenção essa semana?</span>
+          <span class="ask-chip" onclick="askFleet('Qual o custo total previsto de manutenção esse mês?')">Custo previsto de manutenção</span>
+          <span class="ask-chip" onclick="askFleet('Como está o prêmio de seguro comparado ao mês passado?')">Prêmio de seguro vs. mês passado</span>
+        </div>
+        <div class="ask-answer" id="askAnswer"></div>
+      </div>
+
+      <table class="fleet" id="fleetTable">
+        <tr><th>Placa</th><th>Modelo</th><th>Km/mês</th><th>Status</th><th>Risco de falha</th></tr>
+      </table>
+      <div class="table-note">Exibindo 6 de 1.842 — ordenados por risco de falha.</div>
+
+      <div class="detail" id="detail"></div>
+    </div>
+  </div>
+
+  <div class="panel orch-panel" id="panel-orch">
+    <div class="orch-head">
+      <div class="orch-head-top">
+        <div class="orch-head-left"><span class="pulse"></span><b>Visão Bradesco (B2B)</b></div>
+        <div><div class="lat-val" id="latVal">0 ms</div><div class="lat-lbl">latência acumulada</div></div>
+      </div>
+      <div class="orch-subnote">Tudo abaixo roda invisível pra locadora — ela só vê o painel à esquerda.</div>
+    </div>
+    <div class="orch-log" id="orchLog"><div class="orch-empty">Aguardando primeira ação…</div></div>
+    <div class="orch-legend">
+      <div class="leg"><span class="dot" style="background:var(--c-gateway)"></span>AI Gateway</div>
+      <div class="leg"><span class="dot" style="background:var(--c-mcp)"></span>Fleet Engine (MCP)</div>
+      <div class="leg"><span class="dot" style="background:var(--c-pred)"></span>Modelo Preditivo</div>
+      <div class="leg"><span class="dot" style="background:var(--c-gate)"></span>Gate de Pagamento</div>
+      <div class="leg"><span class="dot" style="background:var(--c-audit)"></span>Auditoria</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = {gateway:'var(--c-gateway)', mcp:'var(--c-mcp)', pred:'var(--c-pred)', gate:'var(--c-gate)', audit:'var(--c-audit)'};
+const LABELS = {gateway:'AI Gateway', mcp:'Fleet Engine (MCP)', pred:'Modelo Preditivo', gate:'Gate de Pagamento', audit:'Auditoria'};
+
+const FLEET = [
+  { placa:'CCC3C33', modelo:'Hyundai HB20', km:9100, status:'urgent', risco:88, parcela:1840, premio:340, manut:1290, issue:'Correia dentada', dias:12, fipe:62000 },
+  { placa:'EEE5E55', modelo:'Toyota Corolla', km:7200, status:'warn', risco:54, parcela:2210, premio:298, manut:480, issue:'Pastilhas de freio', dias:34, fipe:118000 },
+  { placa:'BBC2B22', modelo:'Chevrolet Onix', km:6800, status:'warn', risco:47, parcela:1390, premio:255, manut:320, issue:'Troca de óleo programada', dias:41, fipe:79000 },
+  { placa:'FFF6F66', modelo:'BYD Dolphin (elétrico)', km:5100, status:'ok', risco:12, parcela:2890, premio:198, manut:0, issue:'—', dias:null, fipe:139900 },
+  { placa:'ABC1A11', modelo:'Fiat Pulse', km:4200, status:'ok', risco:9, parcela:1520, premio:172, manut:0, issue:'—', dias:null, fipe:89200 },
+  { placa:'DDD4D44', modelo:'Volkswagen Polo', km:3500, status:'ok', risco:7, parcela:1610, premio:165, manut:0, issue:'—', dias:null, fipe:72400 }
+];
+
+const STATUS_LABEL = { ok:'OK', warn:'Atenção', urgent:'Urgente' };
+let totalLatency = 0, eventCount = 0, selected = null;
+
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e; }
+function fmt(n){ return Math.round(n).toLocaleString('pt-BR'); }
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function riskColor(r){ return r>=70 ? 'var(--st-urgent)' : r>=35 ? 'var(--st-warn)' : 'var(--st-ok)'; }
+
+function renderTable(){
+  const t = document.getElementById('fleetTable');
+  t.innerHTML = '<tr><th>Placa</th><th>Modelo</th><th>Km/mês</th><th>Status</th><th>Risco de falha</th></tr>';
+  FLEET.forEach((v,i)=>{
+    const tr = el('tr', i===selected ? 'sel' : '');
+    tr.innerHTML = `
+      <td><b>${v.placa}</b></td>
+      <td>${v.modelo}</td>
+      <td>${fmt(v.km)} km</td>
+      <td><span class="st-badge ${v.status}">${STATUS_LABEL[v.status]}</span></td>
+      <td><span class="risk-bar"><i style="width:${v.risco}%;background:${riskColor(v.risco)}"></i></span>${v.risco}</td>
+    `;
+    tr.onclick = ()=> selectVehicle(i);
+    t.appendChild(tr);
+  });
+}
+
+function logEvent(ev){
+  const log = document.getElementById('orchLog');
+  const empty = log.querySelector('.orch-empty'); if(empty) empty.remove();
+  const entry = el('div','log-entry'); entry.style.borderLeftColor = COLORS[ev.type];
+  const top = el('div','log-top');
+  const typeSpan = el('span','log-type', LABELS[ev.type]); typeSpan.style.color = COLORS[ev.type];
+  const msSpan = el('span','log-ms', ev.ms+' ms');
+  top.appendChild(typeSpan); top.appendChild(msSpan);
+  entry.appendChild(top);
+  entry.appendChild(el('div','log-label', ev.label));
+  entry.appendChild(el('div','log-detail', ev.detail));
+  log.appendChild(entry); log.scrollTop = log.scrollHeight;
+  totalLatency += ev.ms; eventCount += 1;
+  document.getElementById('latVal').textContent = totalLatency.toLocaleString('pt-BR')+' ms';
+  const badge = document.getElementById('mtab-badge');
+  badge.style.display='inline-block'; badge.textContent = eventCount;
+}
+
+async function selectVehicle(i){
+  selected = i; renderTable();
+  const v = FLEET[i];
+  logEvent({type:'mcp', label:'consultar_telemetria('+v.placa+')', detail:'MCP → Google Fleet Engine · localização e uso', ms:420+Math.round(Math.random()*200)});
+  await delay(150);
+  logEvent({type:'pred', label:'modelo_preditivo_manutencao', detail:'Score de risco de falha + janela estimada', ms:310+Math.round(Math.random()*150)});
+  await delay(150);
+  logEvent({type:'mcp', label:'calcular_premio_seguro('+v.placa+')', detail:'MCP → Bradesco Seguros · usage-based', ms:260+Math.round(Math.random()*120)});
+
+  const total = v.parcela + v.premio + v.manut;
+  const d = document.getElementById('detail');
+  d.classList.add('show');
+  d.innerHTML = `
+    <div class="detail-head">
+      <div><b>${v.modelo} · ${v.placa}</b><span>${fmt(v.km)} km/mês · FIPE R$ ${fmt(v.fipe)}</span></div>
+      <span class="st-badge ${v.status}">${STATUS_LABEL[v.status]}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="dcard">
+        <div class="dcard-lbl">Manutenção preditiva</div>
+        <div class="dcard-main">${v.issue}</div>
+        <div class="dcard-sub">${v.dias ? 'Falha estimada em ' + v.dias + ' dias · risco ' + v.risco + '/100' : 'Sem alerta ativo · risco ' + v.risco + '/100'}</div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-lbl">Seguro usage-based</div>
+        <div class="dcard-main">R$ ${fmt(v.premio)}/mês</div>
+        <div class="dcard-sub">Calculado a partir de km rodado e padrão de uso real (telemetria)</div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-lbl">Financiamento</div>
+        <div class="dcard-main">R$ ${fmt(v.parcela)}/mês</div>
+        <div class="dcard-sub">Parcela do contrato de aquisição da unidade</div>
+      </div>
+    </div>
+    <div class="invoice">
+      <div class="inv-row"><span>Parcela do veículo</span><span>R$ ${fmt(v.parcela)}</span></div>
+      <div class="inv-row"><span>Prêmio de seguro (mês)</span><span>R$ ${fmt(v.premio)}</span></div>
+      <div class="inv-row"><span>Manutenção ${v.manut ? 'prevista' : 'prevista (sem alerta)'}</span><span>R$ ${fmt(v.manut)}</span></div>
+      <div class="inv-row tot"><span>Total consolidado — tudo via Bradesco</span><span>R$ ${fmt(total)}</span></div>
+    </div>
+    <div class="actions">
+      ${v.manut ? '<button class="btn btn-brand" onclick="scheduleMaintenance('+i+')">Agendar manutenção</button>' : ''}
+      <button class="btn ${v.manut ? 'btn-ghost' : 'btn-brand'}" onclick="approvePayment('+i+')">Aprovar pagamento consolidado</button>
+    </div>
+    <div id="vstatus"></div>
+  `;
+}
+
+async function scheduleMaintenance(i){
+  const v = FLEET[i];
+  const box = document.getElementById('vstatus');
+  box.innerHTML = '<div class="status-line"><span class="status-dot"></span> Agendando manutenção…</div>';
+  logEvent({type:'mcp', label:'agendar_manutencao('+v.placa+')', detail:'MCP → rede de oficinas parceiras', ms:540+Math.round(Math.random()*200)});
+  await delay(900);
+  box.innerHTML = '<div class="status-line"><span class="status-dot ok"></span> Manutenção agendada · oficina parceira mais próxima, em até 5 dias</div>';
+}
+
+async function approvePayment(i){
+  const v = FLEET[i];
+  const total = v.parcela + v.premio + v.manut;
+  const box = document.getElementById('vstatus');
+  box.innerHTML = '<div class="status-line"><span class="status-dot"></span> Processando pagamento consolidado…</div>';
+  logEvent({type:'gate', label:'Gate de Pagamento', detail:'Valor R$ '+fmt(total)+' dentro do limite → aprovado automaticamente', ms:14});
+  await delay(300);
+  logEvent({type:'mcp', label:'executar_pagamento_consolidado', detail:'MCP → financiamento + seguradora + oficina, em uma única liquidação', ms:780+Math.round(Math.random()*200)});
+  await delay(700);
+  box.innerHTML = '<div class="status-line"><span class="status-dot ok"></span> Pagamento consolidado aprovado · protocolo BRD-FROTA-'+(10000+Math.floor(Math.random()*89999))+'</div>';
+}
+
+async function askFleet(q){
+  const input = document.getElementById('askInput');
+  const question = q || input.value.trim();
+  if(!question) return;
+  input.value='';
+  logEvent({type:'gateway', label:'Consulta em linguagem natural', detail:'AI Gateway → roteamento da pergunta', ms:180+Math.round(Math.random()*100)});
+  await delay(250);
+  logEvent({type:'pred', label:'agregação_modelo_preditivo', detail:'Cálculo sobre a frota completa (1.842 veículos)', ms:260+Math.round(Math.random()*150)});
+
+  const box = document.getElementById('askAnswer');
+  box.classList.add('show');
+  if(question.toLowerCase().includes('atenção')){
+    box.textContent = '3 dos 6 veículos em destaque precisam de atenção essa semana: HB20 (CCC3C33, correia dentada em 12 dias), Corolla (EEE5E55, pastilhas de freio) e Onix (BBC2B22, troca de óleo). No total da frota, são 187 veículos (10,2%) com alerta ativo.';
+  } else if(question.toLowerCase().includes('custo') || question.toLowerCase().includes('manutenção')){
+    box.textContent = 'O custo total previsto de manutenção para os próximos 30 dias é de R$ 248,9 mil, concentrado em 187 veículos com alerta — itens recorrentes: correia dentada, pastilhas de freio e revisões programadas.';
+  } else {
+    box.textContent = 'O prêmio de seguro deste mês (R$ 612,4 mil) está 3,1% menor que o mês passado — reflexo de uma redução média de 4% no padrão de uso de risco (frenagens brruscas e velocidade) captado pela telemetria da frota.';
+  }
+}
+
+function switchMobile(view){
+  document.getElementById('panel-db').classList.toggle('mobile-active', view==='db');
+  document.getElementById('panel-orch').classList.toggle('mobile-active', view==='orch');
+  document.getElementById('mtab-db').classList.toggle('active', view==='db');
+  document.getElementById('mtab-orch').classList.toggle('active', view==='orch');
+}
+
+renderTable();
+</script>
+</body>
+</html>

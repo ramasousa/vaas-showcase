@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: VaaS API — Vehicle as a Service
+  version: "0.1.0"
+  description: |
+    APIs de domínio do VaaS (Vehicle as a Service) — Bradesco Open Platform.
+
+    Cobre a jornada de checkout veicular: consulta de veículo, cálculo de
+    tributos por UF, simulação de financiamento, gate de política, execução
+    de pagamento e agendamento de emplacamento.
+
+    > Todos os dados retornados pelo ambiente de sandbox são **sintéticos**.
+    > Ver "Sandbox & Dados Sintéticos" neste portal.
+
+    Cada operação abaixo corresponde a uma ferramenta MCP do catálogo do
+    agente — ver "Catálogo de Ferramentas MCP".
+  contact:
+    name: Open Platform — APIs, BaaS & Embedded Finance
+    email: open-platform@bradesco.com.br
+servers:
+  - url: https://sandbox.api.bradesco.com.br/vaas/v1
+    description: Sandbox (dados sintéticos)
+  - url: http://localhost:8080/v1
+    description: Ambiente local (projeto de exemplo)
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /veiculos/{placa}:
+    get:
+      operationId: consultarVeiculo
+      summary: Consulta dados do veículo
+      tags: [Veículo]
+      parameters:
+        - name: placa
+          in: path
+          required: true
+          schema: { type: string, example: ABC1D23 }
+        - name: uf
+          in: query
+          required: true
+          schema: { type: string, example: SP }
+      responses:
+        "200":
+          description: Veículo encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VeiculoResponse" }
+
+  /tributos/calcular:
+    post:
+      operationId: calcularTributos
+      summary: Calcula IPVA, licenciamento e taxa para uma UF
+      tags: [Tributos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegraTributariaRequest" }
+      responses:
+        "200":
+          description: Cálculo realizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegraTributariaResponse" }
+
+  /credito/simular:
+    post:
+      operationId: simularFinanciamento
+      summary: Simula parcela de financiamento (CaaS/LaaS)
+      tags: [Crédito]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FinanciamentoRequest" }
+      responses:
+        "200":
+          description: Simulação realizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FinanciamentoResponse" }
+
+  /gate/politica:
+    post:
+      operationId: verificarGatePolitica
+      summary: Verifica aprovação automática determinística de um valor
+      tags: [Gate de Política]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GatePoliticaRequest" }
+      responses:
+        "200":
+          description: Resultado do gate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GatePoliticaResponse" }
+
+  /pagamentos:
+    post:
+      operationId: executarPagamento
+      summary: Executa pagamento (veículo ou tributo)
+      tags: [Pagamento]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PagamentoRequest" }
+      responses:
+        "200":
+          description: Pagamento confirmado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PagamentoResponse" }
+        "403":
+          description: Bloqueado pelo gate de política
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /emplacamentos:
+    post:
+      operationId: agendarEmplacamento
+      summary: Agenda vistoria/emplacamento no DETRAN da UF
+      tags: [Emplacamento]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EmplacamentoRequest" }
+      responses:
+        "200":
+          description: Agendamento confirmado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmplacamentoResponse" }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    VeiculoResponse:
+      type: object
+      properties:
+        placa: { type: string, example: ABC1D23 }
+        uf: { type: string, example: SP }
+        modelo: { type: string, example: "Volkswagen Polo 2023" }
+        valorFipe: { type: number, example: 72400 }
+
+    RegraTributariaRequest:
+      type: object
+      required: [uf, tipoVeiculo, valorFipe]
+      properties:
+        uf: { type: string, example: SP }
+        tipoVeiculo: { type: string, enum: [combustao, eletrico] }
+        valorFipe: { type: number, example: 72400 }
+        zeroKm: { type: boolean, default: false }
+
+    RegraTributariaResponse:
+      type: object
+      properties:
+        ipvaPercentual: { type: integer, example: 4 }
+        ipvaValor: { type: number, example: 2896 }
+        licenciamento: { type: number, example: 187 }
+        taxa: { type: number, example: 312 }
+        totalTributos: { type: number, example: 3395 }
+        incentivoEletrico: { type: boolean }
+
+    FinanciamentoRequest:
+      type: object
+      required: [valor, parcelas]
+      properties:
+        valor: { type: number, example: 72400 }
+        parcelas: { type: integer, example: 48 }
+
+    FinanciamentoResponse:
+      type: object
+      properties:
+        parcelaMensal: { type: number, example: 1735.08 }
+        parcelas: { type: integer, example: 48 }
+        taxaAm: { type: string, example: "1.19%" }
+
+    GatePoliticaRequest:
+      type: object
+      required: [valorTotal]
+      properties:
+        valorTotal: { type: number, example: 75795 }
+
+    GatePoliticaResponse:
+      type: object
+      properties:
+        aprovado: { type: boolean }
+        limite: { type: number, example: 80000 }
+        motivo: { type: string, example: "dentro do limite de auto-aprovação" }
+
+    PagamentoRequest:
+      type: object
+      required: [tipo, valor, destinatario]
+      properties:
+        tipo: { type: string, enum: [veiculo, tributo] }
+        valor: { type: number, example: 72400 }
+        destinatario: { type: string, example: "vendedor-exemplo" }
+
+    PagamentoResponse:
+      type: object
+      properties:
+        status: { type: string, example: confirmado }
+        protocolo: { type: string, example: "BRD-2026-88341" }
+        tipo: { type: string, example: veiculo }
+        valor: { type: number, example: 72400 }
+
+    EmplacamentoRequest:
+      type: object
+      required: [uf, placa]
+      properties:
+        uf: { type: string, example: SP }
+        placa: { type: string, example: ABC1D23 }
+
+    EmplacamentoResponse:
+      type: object
+      properties:
+        protocolo: { type: string, example: "DETRAN-SP-90112" }
+        dataVistoria: { type: string, example: "05/07" }
+        uf: { type: string, example: SP }
+
+    ErrorResponse:
+      type: object
+      properties:
+        codigo: { type: string, example: PAGAMENTO_BLOQUEADO_PELO_GATE }
+        mensagem: { type: string }
+
+tags:
+  - name: Veículo
+  - name: Tributos
+  - name: Crédito
+  - name: Gate de Política
+  - name: Pagamento
+  - name: Emplacamento

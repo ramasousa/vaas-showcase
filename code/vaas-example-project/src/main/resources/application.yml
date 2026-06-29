@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: vaas-example-service
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+vaas:
+  security:
+    api-key: demo-key-troque-em-producao   # placeholder — ver docs/02-autenticacao.md
+  gate:
+    limite-aprovacao-automatica: 80000     # mesmo limite usado em todos os protótipos
+
+logging:
+  level:
+    com.bradesco.vaas: INFO

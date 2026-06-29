@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "VaaS API — Vehicle as a Service",
+    "description": "Coleção de exemplo do domínio VaaS. Configure a variável {{apiKey}} antes de rodar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "apiKey", "value": "demo-key-troque-em-producao" }
+  ],
+  "item": [
+    {
+      "name": "1. Consultar veículo",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }],
+        "url": { "raw": "{{baseUrl}}/v1/veiculos/ABC1D23?uf=SP", "host": ["{{baseUrl}}"], "path": ["v1","veiculos","ABC1D23"], "query": [{"key":"uf","value":"SP"}] }
+      }
+    },
+    {
+      "name": "2. Calcular tributos",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"uf\": \"SP\",\n  \"tipoVeiculo\": \"combustao\",\n  \"valorFipe\": 72400,\n  \"zeroKm\": false\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/tributos/calcular", "host": ["{{baseUrl}}"], "path": ["v1","tributos","calcular"] }
+      }
+    },
+    {
+      "name": "3. Simular financiamento",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"valor\": 72400,\n  \"parcelas\": 48\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/credito/simular", "host": ["{{baseUrl}}"], "path": ["v1","credito","simular"] }
+      }
+    },
+    {
+      "name": "4. Verificar gate de política",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"valorTotal\": 75795\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/gate/politica", "host": ["{{baseUrl}}"], "path": ["v1","gate","politica"] }
+      }
+    },
+    {
+      "name": "5. Executar pagamento (aprovado)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"tipo\": \"veiculo\",\n  \"valor\": 72400,\n  \"destinatario\": \"vendedor-exemplo\"\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/pagamentos", "host": ["{{baseUrl}}"], "path": ["v1","pagamentos"] }
+      }
+    },
+    {
+      "name": "6. Executar pagamento (bloqueado pelo gate)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"tipo\": \"veiculo\",\n  \"valor\": 150000,\n  \"destinatario\": \"vendedor-exemplo\"\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/pagamentos", "host": ["{{baseUrl}}"], "path": ["v1","pagamentos"] }
+      }
+    },
+    {
+      "name": "7. Agendar emplacamento",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-API-Key", "value": "{{apiKey}}" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"uf\": \"SP\",\n  \"placa\": \"ABC1D23\"\n}" },
+        "url": { "raw": "{{baseUrl}}/v1/emplacamentos", "host": ["{{baseUrl}}"], "path": ["v1","emplacamentos"] }
+      }
+    }
+  ]
+}

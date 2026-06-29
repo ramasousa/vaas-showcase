@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Widget Embedded · Bradesco Checkout na Concessionária</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --host-bg:#eef1f5; --host-sidebar:#1b2030; --host-sidebar-text:#9aa3b5; --host-text:#1f2433;
+    --host-muted:#6b7280; --host-border:#dde1e8; --host-accent:#3b6fe0; --host-surface:#ffffff;
+    --w-accent:#CC092F; --w-accent-dark:#900F15; --w-soft:#fdeaec; --w-border:#f2d9db;
+    --w-text:#1d2027; --w-muted:#6b7280; --w-success:#0f9d72; --w-success-soft:#e3f8f1;
+    --noc-bg:#0a0d12; --noc-surface:#11151d; --noc-border:rgba(255,255,255,0.09); --noc-text:#d7dce6; --noc-muted:#5d6678;
+    --c-gateway:#4ea8de; --c-rag:#9b87f5; --c-mcp:#ff7a45; --c-gate:#2dd4a8; --c-audit:#8b94a6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--noc-bg);color:var(--host-text);}
+
+  /* ===== TOPBAR + LAYOUT GERAL ===== */
+  .topbar{background:#0b0e14;border-bottom:1px solid var(--noc-border);padding:13px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;color:#e9edf4;}
+  .topbar-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14.5px;}
+  .topbar-sub{font-size:10.5px;color:var(--noc-muted);}
+  .mobile-tabs{display:none;gap:6px;}
+  .mtab{font-family:'DM Sans';font-size:12px;font-weight:600;background:var(--noc-surface);border:1px solid var(--noc-border);color:var(--noc-muted);padding:7px 12px;border-radius:8px;cursor:pointer;position:relative;}
+  .mtab.active{color:#fff;border-color:var(--c-mcp);}
+  .mtab .badge{position:absolute;top:-6px;right:-6px;background:var(--c-mcp);color:#0b0e14;font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 5px;}
+  .shell{display:flex;}
+  .panel{flex:1;min-width:0;display:flex;flex-direction:column;}
+
+  /* ===== PAINEL DE ORQUESTRAÇÃO (Visão Bradesco) ===== */
+  .orch-panel{background:var(--noc-bg);color:var(--noc-text);}
+  .orch-head{padding:16px 20px;border-bottom:1px solid var(--noc-border);}
+  .orch-head-top{display:flex;justify-content:space-between;align-items:center;}
+  .orch-head-left{display:flex;align-items:center;gap:10px;}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--c-gate);box-shadow:0 0 0 0 rgba(45,212,168,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,212,168,.5);}70%{box-shadow:0 0 0 7px rgba(45,212,168,0);}100%{box-shadow:0 0 0 0 rgba(45,212,168,0);}}
+  .orch-head b{font-family:'Syne',sans-serif;font-size:13px;}
+  .lat-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--c-mcp);text-align:right;}
+  .lat-lbl{font-size:9px;color:var(--noc-muted);text-transform:uppercase;letter-spacing:.5px;text-align:right;}
+  .orch-subnote{font-size:10.5px;color:var(--noc-muted);margin-top:6px;}
+  .orch-log{flex:1;padding:14px 18px;display:flex;flex-direction:column;gap:8px;}
+  .log-entry{background:var(--noc-surface);border:1px solid var(--noc-border);border-left:3px solid var(--c-mcp);border-radius:0 8px 8px 0;padding:9px 13px;animation:rise .3s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .log-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;}
+  .log-type{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+  .log-ms{font-family:'DM Mono',monospace;font-size:10px;color:var(--noc-muted);white-space:nowrap;}
+  .log-label{font-size:12px;font-weight:600;color:var(--noc-text);}
+  .log-detail{font-size:11px;color:var(--noc-muted);font-family:'DM Mono',monospace;margin-top:2px;}
+  .orch-empty{color:var(--noc-muted);font-size:12px;text-align:center;padding:36px 10px;}
+  .orch-legend{padding:10px 18px 14px;border-top:1px solid var(--noc-border);display:flex;gap:9px;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--noc-muted);}
+  .leg .dot{width:7px;height:7px;border-radius:50%;}
+
+  /* ===== HOST SHELL (sistema da concessionária — "AutoSys CRM") ===== */
+  .host{display:flex;background:var(--host-bg);flex:1;}
+  .host-sidebar{width:208px;background:var(--host-sidebar);color:var(--host-sidebar-text);padding:22px 16px;flex-shrink:0;}
+  .host-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:#fff;margin-bottom:30px;display:flex;align-items:center;gap:8px;}
+  .host-logo .sq{width:9px;height:9px;background:var(--host-accent);border-radius:2px;}
+  .host-nav{display:flex;flex-direction:column;gap:2px;}
+  .host-nav-item{font-size:13px;padding:9px 12px;border-radius:7px;cursor:default;}
+  .host-nav-item.active{background:rgba(59,111,224,0.18);color:#fff;font-weight:600;}
+  .host-main{flex:1;padding:28px 36px;max-width:980px;}
+  .host-breadcrumb{font-size:12px;color:var(--host-muted);margin-bottom:14px;}
+  .host-breadcrumb b{color:var(--host-text);}
+  .deal-header{background:var(--host-surface);border:1px solid var(--host-border);border-radius:12px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:22px;}
+  .deal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .deal-sub{font-size:12.5px;color:var(--host-muted);}
+  .deal-tag{font-size:11px;font-weight:700;background:#fff3da;color:#9a6b00;padding:4px 10px;border-radius:20px;}
+
+  /* ===== EMBEDDED WIDGET (Bradesco) ===== */
+  .widget{background:var(--w-soft);border:1.5px solid var(--w-border);border-radius:16px;padding:0;overflow:hidden;}
+  .widget-head{background:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--w-border);}
+  .widget-brand{display:flex;align-items:center;gap:10px;}
+  .widget-brand-icon{width:30px;height:30px;border-radius:8px;background:var(--w-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;}
+  .widget-brand b{font-family:'Syne',sans-serif;font-size:13.5px;display:block;}
+  .widget-brand span{font-size:10.5px;color:var(--w-muted);}
+  .powered{font-size:10px;color:var(--w-muted);font-family:'DM Mono',monospace;}
+
+  .stepper{display:flex;padding:18px 22px 0;gap:0;}
+  .step{flex:1;text-align:center;position:relative;}
+  .step .num{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--w-border);color:var(--w-muted);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-family:'DM Mono',monospace;transition:all .2s;}
+  .step.active .num{background:var(--w-accent);border-color:var(--w-accent);color:#fff;}
+  .step.done .num{background:var(--w-success);border-color:var(--w-success);color:#fff;}
+  .step .lbl{font-size:10.5px;color:var(--w-muted);font-weight:600;}
+  .step.active .lbl{color:var(--w-text);}
+  .step-line{position:absolute;top:11px;left:-50%;width:100%;height:2px;background:var(--w-border);z-index:-1;}
+  .step:first-child .step-line{display:none;}
+  .step.done .step-line, .step.active .step-line{background:var(--w-success);}
+
+  .widget-body{padding:24px 22px 26px;min-height:200px;}
+  .wb-title{font-family:'Syne',sans-serif;font-size:14.5px;font-weight:700;margin-bottom:14px;}
+  .data-row{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-bottom:1px dashed var(--w-border);}
+  .data-row span:first-child{color:var(--w-muted);}
+  .data-row span:last-child{font-weight:600;}
+  .data-row.tot{border-bottom:none;border-top:1.5px solid var(--w-text);margin-top:4px;padding-top:12px;}
+  .data-row.tot span{font-size:14.5px;}
+
+  .btn{background:var(--w-accent);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-size:13.5px;font-weight:700;cursor:pointer;margin-top:18px;font-family:'DM Sans';transition:opacity .15s;}
+  .btn:hover{opacity:0.88;}
+  .btn-ghost{background:transparent;border:1.5px solid var(--w-border);color:var(--w-text);}
+
+  .qr-box{display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
+  .qr-img{width:118px;height:118px;background:repeating-linear-gradient(45deg,#1d2027 0 6px,#fff 6px 12px);border-radius:8px;border:6px solid #fff;box-shadow:0 0 0 1px var(--w-border);flex-shrink:0;}
+  .qr-text b{display:block;font-size:13.5px;margin-bottom:4px;}
+  .qr-text span{font-size:12px;color:var(--w-muted);}
+  .status-row{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--w-muted);}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:#e0a200;animation:wait 1.4s infinite;}
+  @keyframes wait{0%,100%{opacity:.3;}50%{opacity:1;}}
+  .status-dot.ok{background:var(--w-success);animation:none;}
+
+  .receipt{background:#fff;border:1px solid var(--w-border);border-radius:10px;padding:16px 18px;}
+  .receipt-row{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;color:var(--w-muted);}
+  .receipt-row span:last-child{font-family:'DM Mono',monospace;color:var(--w-text);}
+  .check{width:46px;height:46px;border-radius:50%;background:var(--w-success-soft);color:var(--w-success);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;}
+
+  .widget-footer{background:#fff;border-top:1px solid var(--w-border);padding:10px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .code-toggle{font-size:11px;color:var(--host-accent);cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;}
+  .code-block{display:none;background:#0e1117;color:#9fb3c8;font-family:'DM Mono',monospace;font-size:11px;padding:14px 18px;border-radius:8px;margin:0 22px 16px;line-height:1.7;white-space:pre-wrap;}
+  .code-block.show{display:block;}
+
+  @media (max-width:760px){
+    .mobile-tabs{display:flex;}
+    .panel{display:none;}
+    .panel.mobile-active{display:flex;}
+    .host-sidebar{display:none;}
+    .host-main{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Widget Embedded · Bradesco Checkout</div>
+    <div class="topbar-sub">Visão da concessionária (CRM) + Visão Bradesco (orquestração)</div>
+  </div>
+  <div class="mobile-tabs">
+    <button class="mtab active" id="mtab-host" onclick="switchMobile('host')">🏢 CRM</button>
+    <button class="mtab" id="mtab-orch" onclick="switchMobile('orch')">⚙️ Orquestração<span class="badge" id="mtab-badge" style="display:none">0</span></button>
+  </div>
+</div>
+
+<div class="shell">
+<div class="panel mobile-active" id="panel-host">
+<div class="host">
+  <div class="host-sidebar">
+    <div class="host-logo"><span class="sq"></span> AutoSys CRM</div>
+    <div class="host-nav">
+      <div class="host-nav-item">Dashboard</div>
+      <div class="host-nav-item active">Vendas</div>
+      <div class="host-nav-item">Estoque</div>
+      <div class="host-nav-item">Financeiro</div>
+      <div class="host-nav-item">Clientes</div>
+    </div>
+  </div>
+
+  <div class="host-main">
+    <div class="host-breadcrumb">Vendas / <b>Venda #4521</b></div>
+    <div class="deal-header">
+      <div>
+        <div class="deal-title">Honda Civic 2024 · Cliente: Mariana Costa</div>
+        <div class="deal-sub">Vendedor: Carlos Lima · Loja Centro · placa final em emissão</div>
+      </div>
+      <div class="deal-tag">Aguardando checkout</div>
+    </div>
+
+    <!-- ===== WIDGET BRADESCO EMBEDDED ===== -->
+    <div class="widget">
+      <div class="widget-head">
+        <div class="widget-brand">
+          <div class="widget-brand-icon">B</div>
+          <div><b>Bradesco Checkout</b><span>Pagamento, tributos e licenciamento</span></div>
+        </div>
+        <div class="powered">sandbox · sdk v1.2</div>
+      </div>
+
+      <div class="stepper" id="stepper"></div>
+      <div class="widget-body" id="widgetBody"></div>
+
+      <div class="widget-footer">
+        <span class="powered">Powered by Bradesco BaaS</span>
+        <button class="code-toggle" onclick="toggleCode()">&lt;/&gt; ver código de integração</button>
+      </div>
+      <div class="code-block" id="codeBlock">&lt;script src="https://sandbox.baas.bradesco.com.br/checkout-widget.js"
+        data-partner-id="autosys-crm"
+        data-venda-id="4521"
+        data-ambiente="sandbox"&gt;&lt;/script&gt;
+
+&lt;bradesco-checkout
+  veiculo-fipe="118400"
+  uf="SP"
+  cliente-id="MC-99213"&gt;
+&lt;/bradesco-checkout&gt;</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="panel orch-panel" id="panel-orch">
+  <div class="orch-head">
+    <div class="orch-head-top">
+      <div class="orch-head-left"><span class="pulse"></span><b>Visão Bradesco</b></div>
+      <div><div class="lat-val" id="latVal">0 ms</div><div class="lat-lbl">latência acumulada</div></div>
+    </div>
+    <div class="orch-subnote">Tudo abaixo é invisível pro vendedor — ele só vê o widget à esquerda.</div>
+  </div>
+  <div class="orch-log" id="orchLog"><div class="orch-empty">Aguardando início da jornada…</div></div>
+  <div class="orch-legend">
+    <div class="leg"><span class="dot" style="background:var(--c-gateway)"></span>AI Gateway</div>
+    <div class="leg"><span class="dot" style="background:var(--c-rag)"></span>RAG</div>
+    <div class="leg"><span class="dot" style="background:var(--c-mcp)"></span>MCP Tool</div>
+    <div class="leg"><span class="dot" style="background:var(--c-gate)"></span>Gate de Política</div>
+    <div class="leg"><span class="dot" style="background:var(--c-audit)"></span>Auditoria</div>
+  </div>
+</div>
+</div>
+
+<script>
+const STEP_LABELS = ['Veículo','Tributos','Pagamento','Confirmação'];
+let step = 1;
+
+const DEAL = { fipe:118400, ipva:4736, licensing:187, transferFee:312 };
+function fmt(n){ return Math.round(n).toLocaleString('pt-BR'); }
+function total(){ return DEAL.fipe + DEAL.ipva + DEAL.licensing + DEAL.transferFee; }
+
+const COLORS = {gateway:'var(--c-gateway)', rag:'var(--c-rag)', mcp:'var(--c-mcp)', gate:'var(--c-gate)', audit:'var(--c-audit)'};
+const LABELS = {gateway:'AI Gateway', rag:'RAG', mcp:'MCP Tool', gate:'Gate de Política', audit:'Auditoria'};
+let totalLatency = 0, eventCount = 0;
+
+function logEvent(ev){
+  const log = document.getElementById('orchLog');
+  const empty = log.querySelector('.orch-empty'); if(empty) empty.remove();
+  const entry = document.createElement('div'); entry.className = 'log-entry';
+  entry.style.borderLeftColor = COLORS[ev.type];
+  entry.innerHTML = `
+    <div class="log-top">
+      <span class="log-type" style="color:${COLORS[ev.type]}">${LABELS[ev.type]}</span>
+      <span class="log-ms">${ev.ms} ms</span>
+    </div>
+    <div class="log-label">${ev.label}</div>
+    <div class="log-detail">${ev.detail}</div>
+  `;
+  log.appendChild(entry); log.scrollTop = log.scrollHeight;
+  totalLatency += ev.ms; eventCount += 1;
+  document.getElementById('latVal').textContent = totalLatency.toLocaleString('pt-BR')+' ms';
+  const badge = document.getElementById('mtab-badge');
+  badge.style.display='inline-block'; badge.textContent = eventCount;
+}
+
+function switchMobile(view){
+  document.getElementById('panel-host').classList.toggle('mobile-active', view==='host');
+  document.getElementById('panel-orch').classList.toggle('mobile-active', view==='orch');
+  document.getElementById('mtab-host').classList.toggle('active', view==='host');
+  document.getElementById('mtab-orch').classList.toggle('active', view==='orch');
+}
+
+function renderStepper(){
+  const box = document.getElementById('stepper'); box.innerHTML='';
+  STEP_LABELS.forEach((lbl,i)=>{
+    const n=i+1;
+    const cls = n===step ? 'active' : (n<step ? 'done' : '');
+    const div = document.createElement('div');
+    div.className = 'step '+cls;
+    div.innerHTML = '<div class="step-line"></div><div class="num">'+(n<step?'✓':n)+'</div><div class="lbl">'+lbl+'</div>';
+    box.appendChild(div);
+  });
+}
+
+function renderBody(){
+  const b = document.getElementById('widgetBody');
+  if(step===1){
+    b.innerHTML = `
+      <div class="wb-title">Dados do veículo (preenchidos automaticamente pela venda)</div>
+      <div class="data-row"><span>Veículo</span><span>Honda Civic 2024</span></div>
+      <div class="data-row"><span>Valor FIPE</span><span>R$ ${fmt(DEAL.fipe)}</span></div>
+      <div class="data-row"><span>UF de registro</span><span>SP</span></div>
+      <button class="btn" onclick="calcular()">Calcular tributos e taxas</button>
+    `;
+  } else if(step===2){
+    b.innerHTML = `
+      <div class="wb-title">Tributos &amp; taxas — UF SP</div>
+      <div class="data-row"><span>Veículo</span><span>R$ ${fmt(DEAL.fipe)}</span></div>
+      <div class="data-row"><span>IPVA (4%)</span><span>R$ ${fmt(DEAL.ipva)}</span></div>
+      <div class="data-row"><span>Licenciamento</span><span>R$ ${fmt(DEAL.licensing)}</span></div>
+      <div class="data-row"><span>Taxa de transferência</span><span>R$ ${fmt(DEAL.transferFee)}</span></div>
+      <div class="data-row tot"><span>Total</span><span>R$ ${fmt(total())}</span></div>
+      <button class="btn" onclick="solicitar()">Solicitar pagamento ao cliente</button>
+    `;
+  } else if(step===3){
+    b.innerHTML = `
+      <div class="wb-title">Pagamento — aguardando cliente</div>
+      <div class="qr-box">
+        <div class="qr-img"></div>
+        <div class="qr-text">
+          <b>Link enviado ao app Bradesco da cliente</b>
+          <span>Mariana recebe a cobrança completa (veículo + tributos) no próprio app, com biometria/2FA — o vendedor não manipula valores.</span>
+        </div>
+      </div>
+      <div class="status-row" id="statusRow"><span class="status-dot"></span> Aguardando confirmação do cliente…</div>
+    `;
+    setTimeout(()=>{
+      logEvent({type:'gate', label:'Gate de Política', detail:'Valor de R$ '+fmt(total())+' dentro do limite → aprovado automaticamente', ms:12});
+      logEvent({type:'mcp', label:'executar_pagamento_consolidado', detail:'MCP → veículo + tributos, liquidação única', ms:760});
+      const sr = document.getElementById('statusRow');
+      if(sr) sr.innerHTML = '<span class="status-dot ok"></span> Pagamento aprovado pelo cliente';
+      setTimeout(()=>{
+        logEvent({type:'audit', label:'Trilha de auditoria registrada', detail:'Jornada completa · log imutável · invisível ao vendedor', ms:35});
+        step=4; renderStepper(); renderBody();
+      }, 900);
+    }, 2600);
+  } else if(step===4){
+    b.innerHTML = `
+      <div class="check">✓</div>
+      <div class="wb-title" style="text-align:center">Checkout concluído</div>
+      <div class="receipt">
+        <div class="receipt-row"><span>Pagamento ao vendedor</span><span>BRD-2026-41207</span></div>
+        <div class="receipt-row"><span>Tributos (SEFAZ-SP)</span><span>SEFAZ-SP-83012</span></div>
+        <div class="receipt-row"><span>Vistoria emplacamento</span><span>11/07 · DETRAN-SP</span></div>
+        <div class="receipt-row"><span>Total processado</span><span>R$ ${fmt(total())}</span></div>
+      </div>
+      <button class="btn btn-ghost" onclick="reset()" style="width:100%">Nova venda</button>
+    `;
+  }
+}
+
+function calcular(){
+  const b = document.getElementById('widgetBody');
+  b.innerHTML = '<div class="wb-title">Calculando…</div><div class="status-row"><span class="status-dot"></span> Consultando regra tributária via RAG + MCP</div>';
+  logEvent({type:'rag', label:'consultar_regra_tributaria', detail:'RAG → regra_tributaria_SP_2026', ms:310});
+  setTimeout(()=>{
+    logEvent({type:'mcp', label:'calcular_tributos', detail:'MCP → SEFAZ-SP (sintético)', ms:260});
+    step=2; renderStepper(); renderBody();
+  }, 750);
+}
+function solicitar(){
+  logEvent({type:'mcp', label:'gerar_link_pagamento', detail:'MCP → cobrança gerada no app Bradesco da cliente', ms:220});
+  step=3; renderStepper(); renderBody();
+}
+function reset(){ step=1; renderStepper(); renderBody(); }
+function toggleCode(){ document.getElementById('codeBlock').classList.toggle('show'); }
+
+renderStepper(); renderBody();
+logEvent({type:'gateway', label:'Sessão autenticada (parceiro)', detail:'AI Gateway · OAuth2 + mTLS (B2B2C)', ms:140});
+logEvent({type:'mcp', label:'consultar_veiculo', detail:'MCP → dados da venda + RENAVAM/FIPE (sintético)', ms:480});
+</script>
+</body>
+</html>
