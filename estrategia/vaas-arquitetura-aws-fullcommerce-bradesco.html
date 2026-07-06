@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaaS · Full Commerce · Ecossistema Bradesco · Arquitetura AWS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#080b10;font-family:'DM Sans',sans-serif;color:#e0e6f0;overflow-x:auto;}
+  .page{padding:22px 26px 44px;}
+  .doc-tag{font-size:10.5px;font-weight:700;color:#CC092F;text-transform:uppercase;letter-spacing:2.5px;font-family:'DM Mono',monospace;margin-bottom:5px;}
+  .doc-title{font-size:19px;font-weight:700;color:#e0e6f0;margin-bottom:4px;}
+  .doc-sub{font-size:10.5px;color:#4a5568;font-family:'DM Mono',monospace;margin-bottom:22px;}
+
+  /* ─── diagram canvas ─── */
+  .diagram{position:relative;width:1780px;height:1120px;}
+
+  /* ─── borders / regions ─── */
+  .aws-cloud{position:absolute;left:0;top:0;width:1780px;height:1120px;border:1.5px dashed #2a3a52;border-radius:14px;}
+  .aws-lbl{position:absolute;left:12px;top:7px;font-size:9.5px;font-weight:700;color:#2a3a52;text-transform:uppercase;letter-spacing:1.5px;}
+
+  .region{position:absolute;border:1.5px dashed #1a5f78;border-radius:10px;}
+  .region-lbl{position:absolute;top:-11px;left:10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;background:#080b10;padding:0 6px;}
+
+  .vpc{position:absolute;border:2px solid rgba(124,58,237,.45);background:rgba(124,58,237,.03);border-radius:9px;}
+  .vpc-lbl{position:absolute;top:-11px;left:10px;font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.9px;background:#080b10;padding:0 6px;display:flex;align-items:center;gap:5px;}
+
+  .snet{position:absolute;border-radius:7px;border:1.5px dashed;}
+  .snet-lbl{position:absolute;top:-10px;left:8px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;padding:0 5px;background:#080b10;}
+
+  .snet.pub{border-color:rgba(245,158,11,.55);}   .snet.pub .snet-lbl{color:#f59e0b;}
+  .snet.app{border-color:rgba(96,165,250,.55);}   .snet.app .snet-lbl{color:#60a5fa;}
+  .snet.data{border-color:rgba(52,211,153,.55);}  .snet.data .snet-lbl{color:#34d399;}
+  .snet.int{border-color:rgba(167,139,250,.45);}  .snet.int .snet-lbl{color:#a78bfa;}
+  .snet.obs{border-color:rgba(148,163,184,.35);}  .snet.obs .snet-lbl{color:#94a3b8;}
+
+  .sg{position:absolute;border:1.5px dashed rgba(248,113,113,.55);border-radius:7px;}
+  .sg-lbl{position:absolute;top:-10px;left:8px;font-size:8.5px;font-weight:700;color:#f87171;background:#080b10;padding:0 5px;}
+
+  /* ─── service boxes ─── */
+  .svc{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;gap:3px;}
+  .svc-ico{font-size:20px;line-height:1;}
+  .svc-nm{font-size:9px;font-weight:700;text-align:center;line-height:1.3;color:#e0e6f0;max-width:84px;}
+  .svc-sub{font-size:8px;color:#64748b;text-align:center;max-width:84px;line-height:1.3;}
+
+  .co {background:rgba(255,153,0,.11);border:1.5px solid rgba(255,153,0,.48);}
+  .cp {background:rgba(140,79,255,.11);border:1.5px solid rgba(140,79,255,.48);}
+  .cpk{background:rgba(231,21,123,.11);border:1.5px solid rgba(231,21,123,.48);}
+  .cb {background:rgba(59,130,246,.11);border:1.5px solid rgba(59,130,246,.48);}
+  .ct {background:rgba(1,168,141,.11);border:1.5px solid rgba(1,168,141,.48);}
+  .cg {background:rgba(34,197,94,.11);border:1.5px solid rgba(34,197,94,.48);}
+  .cr {background:rgba(239,68,68,.11);border:1.5px solid rgba(239,68,68,.48);}
+  .csk{background:rgba(14,165,233,.11);border:1.5px solid rgba(14,165,233,.48);}
+  .cv {background:rgba(139,92,246,.14);border:1.5px solid rgba(139,92,246,.55);}
+  .csl{background:rgba(100,116,139,.11);border:1.5px solid rgba(100,116,139,.38);}
+  .cext{background:rgba(71,85,105,.14);border:1.5px dashed rgba(100,116,139,.45);}
+  .cbr{background:rgba(204,9,47,.11);border:1.5px solid rgba(204,9,47,.48);}
+
+  /* ─── bradesco intragrupo entities ─── */
+  .intra-entity{position:absolute;border-radius:9px;padding:12px 14px;}
+  .intra-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+  .intra-badge{display:inline-flex;align-items:center;gap:4px;font-size:8.5px;font-weight:600;padding:2px 7px;border-radius:8px;margin-top:4px;}
+
+  /* ─── payment rail badges ─── */
+  .rail{display:inline-flex;align-items:center;gap:5px;font-size:8.5px;font-weight:700;padding:4px 10px;border-radius:6px;}
+  .rail-pix{background:rgba(50,213,131,.12);border:1px solid rgba(50,213,131,.35);color:#34d399;}
+  .rail-conv{background:rgba(78,168,222,.12);border:1px solid rgba(78,168,222,.35);color:#60a5fa;}
+  .rail-intra{background:rgba(155,135,245,.12);border:1px solid rgba(155,135,245,.35);color:#a78bfa;}
+  .rail-ted{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#f59e0b;}
+
+  /* ─── svg arrows ─── */
+  .arr{position:absolute;top:0;left:0;width:1780px;height:1120px;pointer-events:none;}
+
+  .note-box{position:absolute;border-radius:8px;padding:10px 13px;font-size:9px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-tag">Bradesco Open Platform · VaaS — Vehicle as a Service</div>
+  <div class="doc-title">Full Commerce · Ecossistema Bradesco · Arquitetura AWS · sa-east-1</div>
+  <div class="doc-sub">v0.2 · Julho/2026 · ECS Fargate · Bedrock AgentCore · Step Functions Express Saga · Conglomerado Bradesco Intragrupo</div>
+
+  <div style="overflow-x:auto;">
+  <div class="diagram">
+
+    <div class="aws-cloud"><div class="aws-lbl">☁ AWS Cloud · sa-east-1</div></div>
+
+    <!-- ══════ TOP EXTERNAL LAYER ══════ -->
+
+    <!-- Users/Channels -->
+    <div class="svc cext" style="left:28px;top:34px;width:76px;height:70px;">
+      <div class="svc-ico">👤</div>
+      <div class="svc-nm">Cliente Final</div>
+      <div class="svc-sub">App / Web / Widget</div>
+    </div>
+
+    <div class="svc cext" style="left:118px;top:34px;width:76px;height:70px;">
+      <div class="svc-ico">🏪</div>
+      <div class="svc-nm">Marketplace</div>
+      <div class="svc-sub">BYD · GWM · ML</div>
+    </div>
+
+    <div class="svc cext" style="left:208px;top:34px;width:76px;height:70px;">
+      <div class="svc-ico">🏢</div>
+      <div class="svc-nm">Concessionária</div>
+      <div class="svc-sub">CRM · Widget SDK</div>
+    </div>
+
+    <!-- Apigee -->
+    <div class="svc cbr" style="left:336px;top:34px;width:82px;height:70px;">
+      <div class="svc-ico">🔀</div>
+      <div class="svc-nm">Apigee</div>
+      <div class="svc-sub">MCP Gateway · Políticas · OAuth2</div>
+    </div>
+
+    <!-- Edge AWS -->
+    <div class="svc co" style="left:466px;top:34px;width:72px;height:70px;">
+      <div class="svc-ico">🌐</div>
+      <div class="svc-nm">Route 53</div>
+      <div class="svc-sub">DNS · Health check</div>
+    </div>
+    <div class="svc co" style="left:552px;top:34px;width:72px;height:70px;">
+      <div class="svc-ico">⚡</div>
+      <div class="svc-nm">CloudFront CDN</div>
+      <div class="svc-sub">Angular MFE</div>
+    </div>
+    <div class="svc cr" style="left:638px;top:34px;width:72px;height:70px;">
+      <div class="svc-ico">🛡️</div>
+      <div class="svc-nm">AWS WAF</div>
+      <div class="svc-sub">L7 · Shield Adv</div>
+    </div>
+    <div class="svc cr" style="left:724px;top:34px;width:72px;height:70px;">
+      <div class="svc-ico">🔐</div>
+      <div class="svc-nm">ACM</div>
+      <div class="svc-sub">TLS / mTLS</div>
+    </div>
+
+    <!-- External integrations (right of edge) -->
+    <div class="svc cext" style="left:860px;top:34px;width:82px;height:70px;">
+      <div class="svc-ico">🚗</div>
+      <div class="svc-nm">RENAVAM / FIPE</div>
+      <div class="svc-sub">Dados veiculares</div>
+    </div>
+    <div class="svc cext" style="left:956px;top:34px;width:82px;height:70px;">
+      <div class="svc-ico">🏛️</div>
+      <div class="svc-nm">DETRAN</div>
+      <div class="svc-sub">27 UFs · Emplacamento</div>
+    </div>
+    <div class="svc cext" style="left:1052px;top:34px;width:82px;height:70px;">
+      <div class="svc-ico">📊</div>
+      <div class="svc-nm">SEFAZ</div>
+      <div class="svc-sub">IPVA · Arrecadação</div>
+    </div>
+    <div class="svc cext" style="left:1148px;top:34px;width:82px;height:70px;">
+      <div class="svc-ico">🏦</div>
+      <div class="svc-nm">Core Bancário</div>
+      <div class="svc-sub">Bradesco · On-premise</div>
+    </div>
+
+    <!-- ══════ REGION ══════ -->
+    <div class="region" style="left:18px;top:124px;width:1380px;height:980px;">
+      <div class="region-lbl" style="color:#1a5f78;">📍 Região: sa-east-1 · São Paulo</div>
+
+      <!-- ══════ VPC ══════ -->
+      <div class="vpc" style="left:14px;top:20px;width:880px;height:946px;">
+        <div class="vpc-lbl">🔲 VPC · vaas-platform-vpc · 10.0.0.0/16</div>
+
+        <!-- PUBLIC SUBNET -->
+        <div class="snet pub" style="left:12px;top:24px;width:854px;height:118px;">
+          <div class="snet-lbl">🌐 Subnets Públicas · AZ a, b, c</div>
+          <div class="svc co" style="left:12px;top:20px;width:74px;height:70px;"><div class="svc-ico">⚡</div><div class="svc-nm">Global Accelerator</div></div>
+          <div class="svc co" style="left:104px;top:20px;width:74px;height:70px;"><div class="svc-ico">⚖️</div><div class="svc-nm">ALB</div><div class="svc-sub">443 HTTPS</div></div>
+          <div class="svc co" style="left:196px;top:20px;width:74px;height:70px;"><div class="svc-ico">🔁</div><div class="svc-nm">NAT Gateway</div><div class="svc-sub">AZ a · b · c</div></div>
+          <div class="svc cr" style="left:288px;top:20px;width:74px;height:70px;"><div class="svc-ico">🛡️</div><div class="svc-nm">WAF + Shield</div></div>
+          <div style="position:absolute;right:12px;top:20px;background:rgba(139,92,246,.09);border:1px solid rgba(139,92,246,.28);border-radius:7px;padding:7px 12px;font-size:8.5px;color:#a78bfa;font-weight:700;line-height:1.8;">
+            VPC Endpoints · PrivateLink<br>
+            <span style="color:#4a5568;font-weight:400;">Bedrock · DynamoDB · S3 · Step Fn<br>Secrets Manager · SQS · EventBridge</span>
+          </div>
+        </div>
+
+        <!-- APP SUBNET -->
+        <div class="snet app" style="left:12px;top:162px;width:854px;height:220px;">
+          <div class="snet-lbl">🔒 Subnets Privadas — App · AZ a, b</div>
+
+          <div style="position:absolute;left:10px;top:20px;right:10px;bottom:10px;border:1px dashed rgba(96,165,250,.35);border-radius:7px;padding:8px;">
+            <div style="position:absolute;top:-9px;left:8px;font-size:8px;color:#60a5fa;font-weight:700;background:#080b10;padding:0 5px;text-transform:uppercase;letter-spacing:.7px;">🐳 ECS Fargate · vaas-platform-cluster</div>
+
+            <div class="svc co" style="left:6px;top:12px;width:86px;height:82px;"><div class="svc-ico">☕</div><div class="svc-nm">vaas-pagamento</div><div class="svc-sub">Split Payment Saga</div></div>
+            <div class="svc cv" style="left:102px;top:12px;width:86px;height:82px;"><div class="svc-ico">🤖</div><div class="svc-nm">vaas-agente-gw</div><div class="svc-sub">Bedrock AgentCore Proxy</div></div>
+            <div class="svc co" style="left:198px;top:12px;width:86px;height:82px;"><div class="svc-ico">🚗</div><div class="svc-nm">vaas-veiculo</div><div class="svc-sub">RENAVAM · FIPE · Dados</div></div>
+            <div class="svc cb" style="left:294px;top:12px;width:86px;height:82px;"><div class="svc-ico">📋</div><div class="svc-nm">vaas-tributos</div><div class="svc-sub">IPVA · DETRAN · RAG</div></div>
+            <div class="svc cpk" style="left:390px;top:12px;width:86px;height:82px;"><div class="svc-ico">🛡️</div><div class="svc-nm">vaas-seguro</div><div class="svc-sub">Bradesco Seguros Intragrupo</div></div>
+            <div class="svc ct" style="left:486px;top:12px;width:86px;height:82px;"><div class="svc-ico">💳</div><div class="svc-nm">vaas-credito</div><div class="svc-sub">CaaS · LaaS · Financiamento</div></div>
+            <div class="svc cg" style="left:582px;top:12px;width:86px;height:82px;"><div class="svc-ico">🏦</div><div class="svc-nm">vaas-banking</div><div class="svc-sub">Conta · CPA · Onboarding</div></div>
+            <div class="svc cp" style="left:678px;top:12px;width:86px;height:82px;"><div class="svc-ico">λ</div><div class="svc-nm">Lambda</div><div class="svc-sub">Saga Compensate Outbox Poller</div></div>
+          </div>
+        </div>
+
+        <!-- INTEGRATION SUBNET -->
+        <div class="snet int" style="left:12px;top:402px;width:854px;height:128px;">
+          <div class="snet-lbl">⚙️ Orquestração & Integração</div>
+
+          <div class="svc cp" style="left:12px;top:22px;width:90px;height:80px;"><div class="svc-ico">🔄</div><div class="svc-nm">Step Functions Express</div><div class="svc-sub">Split Payment Saga ASL</div></div>
+          <div class="svc cp" style="left:114px;top:22px;width:90px;height:80px;"><div class="svc-ico">📮</div><div class="svc-nm">EventBridge</div><div class="svc-sub">Domain Events Bus</div></div>
+          <div class="svc csk" style="left:216px;top:22px;width:90px;height:80px;"><div class="svc-ico">📬</div><div class="svc-nm">SQS</div><div class="svc-sub">DLQ · Retry · Conciliation</div></div>
+          <div class="svc co" style="left:318px;top:22px;width:90px;height:80px;"><div class="svc-ico">⚡</div><div class="svc-nm">DynamoDB</div><div class="svc-sub">Idempotência attribute_not_exists</div></div>
+          <div class="svc cg" style="left:420px;top:22px;width:90px;height:80px;"><div class="svc-ico">🪣</div><div class="svc-nm">S3 + Object Lock</div><div class="svc-sub">Audit WORM · 7 anos</div></div>
+          <div class="svc cg" style="left:522px;top:22px;width:90px;height:80px;"><div class="svc-ico">📦</div><div class="svc-nm">ECR</div><div class="svc-sub">Container images CI/CD</div></div>
+
+          <!-- Payment rails legend inside -->
+          <div style="position:absolute;right:12px;top:18px;display:flex;flex-direction:column;gap:5px;">
+            <div style="font-size:8px;color:#4a5568;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px;">Trilhos de Pagamento</div>
+            <div class="rail rail-pix">PIX D+0 · Dealer / Parceiro</div>
+            <div class="rail rail-conv">Arrecadação D+0 · SEFAZ / DETRAN</div>
+            <div class="rail rail-intra">Intragrupo · Bradesco Seguros</div>
+            <div class="rail rail-ted">TED · Fallback PIX indisponível</div>
+          </div>
+        </div>
+
+        <!-- DATA SUBNET -->
+        <div class="snet data" style="left:12px;top:550px;width:854px;height:158px;">
+          <div class="snet-lbl">🗄️ Subnets Isoladas — Data · Sem rota internet</div>
+
+          <div class="sg" style="left:10px;top:18px;width:480px;height:114px;">
+            <div class="sg-lbl">Security Group · DB Tier</div>
+            <div class="svc cb" style="left:12px;top:18px;width:102px;height:80px;"><div class="svc-ico">🐘</div><div class="svc-nm">Aurora PostgreSQL Serverless v2</div><div class="svc-sub">0.5–128 ACU · Multi-AZ · KMS CMK</div></div>
+            <div class="svc csk" style="left:126px;top:18px;width:96px;height:80px;"><div class="svc-ico">⚡</div><div class="svc-nm">ElastiCache Redis</div><div class="svc-sub">Cluster mode Rate limit · Lock</div></div>
+            <div class="svc cb" style="left:234px;top:18px;width:96px;height:80px;"><div class="svc-ico">📸</div><div class="svc-nm">Snapshots automáticos</div><div class="svc-sub">KMS CMK · Retenção 35d</div></div>
+            <div class="svc csl" style="left:342px;top:18px;width:96px;height:80px;"><div class="svc-ico">🔍</div><div class="svc-nm">OpenSearch Service</div><div class="svc-sub">Logs · Auditoria · Full-text</div></div>
+          </div>
+
+          <div class="svc ct" style="left:502px;top:22px;width:100px;height:80px;"><div class="svc-ico">📚</div><div class="svc-nm">Bedrock Knowledge Base</div><div class="svc-sub">RAG · Regras tributárias 27 UFs</div></div>
+          <div class="svc ct" style="left:614px;top:22px;width:100px;height:80px;"><div class="svc-ico">📂</div><div class="svc-nm">S3 Knowledge Store</div><div class="svc-sub">Normas BACEN · CMN · SUSEP</div></div>
+          <div class="svc cr" style="left:726px;top:22px;width:96px;height:80px;"><div class="svc-ico">🔑</div><div class="svc-nm">Secrets Manager + KMS</div><div class="svc-sub">CMK por serviço · Rotação 30d</div></div>
+        </div>
+
+        <!-- BEDROCK subnet -->
+        <div class="snet" style="left:12px;top:728px;width:854px;height:140px;border-color:rgba(1,168,141,.5);border-style:dashed;">
+          <div class="snet-lbl" style="color:#34d399;">🤖 Amazon Bedrock · via PrivateLink · Modelo: Claude claude-sonnet-4-6</div>
+
+          <div style="position:absolute;left:10px;top:20px;right:10px;bottom:10px;background:rgba(1,168,141,.04);border:1px solid rgba(1,168,141,.18);border-radius:7px;padding:8px;display:flex;gap:10px;align-items:center;">
+            <div class="svc ct" style="position:relative;width:96px;height:82px;"><div class="svc-ico">🤖</div><div class="svc-nm">AgentCore</div><div class="svc-sub">MCP Orchestration Tool Registry</div></div>
+            <div class="svc ct" style="position:relative;width:96px;height:82px;"><div class="svc-ico">🧱</div><div class="svc-nm">Guardrails</div><div class="svc-sub">PII Redact · Prompt Injection Content Filter</div></div>
+            <div class="svc ct" style="position:relative;width:96px;height:82px;"><div class="svc-ico">📚</div><div class="svc-nm">Knowledge Bases</div><div class="svc-sub">RAG Gerenciado Embedding</div></div>
+            <div style="flex:1;border-left:1px dashed rgba(1,168,141,.3);padding-left:14px;font-size:9px;line-height:1.8;color:#5eead4;">
+              <b style="color:#34d399;display:block;margin-bottom:4px;">Princípio de Governança</b>
+              O agente <b>PLANEJA</b> · O domain service <b>EXECUTA</b><br>
+              Guardrail de entrada → modelo → Guardrail de saída<br>
+              Gate de Política: regra <b>determinística</b> no domain service<br>
+              Dados de clientes nunca saem da VPC (PrivateLink)
+            </div>
+          </div>
+        </div>
+
+        <!-- OBS subnet -->
+        <div class="snet obs" style="left:12px;top:888px;width:854px;height:44px;">
+          <div class="snet-lbl">📊 Observabilidade</div>
+          <div style="position:absolute;left:10px;top:5px;display:flex;gap:8px;align-items:center;">
+            <div class="svc co" style="position:relative;width:82px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">📊</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">CloudWatch · Metrics + Alarms + Logs</div></div>
+            <div class="svc cp" style="position:relative;width:78px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">🔎</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">X-Ray · Distributed Tracing</div></div>
+            <div class="svc cr" style="position:relative;width:72px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">📋</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">CloudTrail · Audit 7 anos</div></div>
+            <div class="svc csk" style="position:relative;width:64px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">📡</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">Config · Compliance</div></div>
+            <div class="svc csl" style="position:relative;width:64px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">🔔</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">SNS · PagerDuty</div></div>
+            <div class="svc cr" style="position:relative;width:56px;height:30px;flex-direction:row;gap:4px;padding:0 8px;"><div style="font-size:13px;">🏗️</div><div class="svc-nm" style="max-width:none;font-size:8.5px;">IAM · Task Roles</div></div>
+          </div>
+        </div>
+
+      </div><!-- /vpc -->
+
+      <!-- ══════ MANAGED + CI/CD (right of VPC) ══════ -->
+      <div class="region" style="left:910px;top:20px;width:460px;height:340px;border-color:rgba(139,92,246,.3);">
+        <div class="region-lbl" style="color:#a78bfa;">Serviços Gerenciados · AWS</div>
+        <div class="svc co" style="left:14px;top:22px;width:90px;height:76px;"><div class="svc-ico">🔧</div><div class="svc-nm">CodePipeline + CodeBuild</div><div class="svc-sub">CI/CD · Git → ECR → ECS</div></div>
+        <div class="svc cb" style="left:116px;top:22px;width:90px;height:76px;"><div class="svc-ico">🏗️</div><div class="svc-nm">AWS CDK</div><div class="svc-sub">Infra as Code TypeScript</div></div>
+        <div class="svc cr" style="left:218px;top:22px;width:90px;height:76px;"><div class="svc-ico">🔑</div><div class="svc-nm">IAM</div><div class="svc-sub">Least Privilege Task Roles</div></div>
+        <div class="svc ct" style="left:320px;top:22px;width:90px;height:76px;"><div class="svc-ico">✅</div><div class="svc-nm">AWS Config + Security Hub</div><div class="svc-sub">Compliance checks</div></div>
+
+        <div class="svc cp" style="left:14px;top:114px;width:90px;height:76px;"><div class="svc-ico">📋</div><div class="svc-nm">Step Functions Standard</div><div class="svc-sub">Acessórios condicional D+2</div></div>
+        <div class="svc cb" style="left:116px;top:114px;width:90px;height:76px;"><div class="svc-ico">🌐</div><div class="svc-nm">API Gateway</div><div class="svc-sub">REST interno fallback</div></div>
+        <div class="svc csk" style="left:218px;top:114px;width:90px;height:76px;"><div class="svc-ico">📬</div><div class="svc-nm">SNS Topics</div><div class="svc-sub">Alertas + Notificações</div></div>
+        <div class="svc cg" style="left:320px;top:114px;width:90px;height:76px;"><div class="svc-ico">📦</div><div class="svc-nm">ECR Private</div><div class="svc-sub">Imagens Spring Boot</div></div>
+
+        <!-- Hexagonal note -->
+        <div style="position:absolute;left:12px;bottom:12px;right:12px;background:rgba(204,9,47,.06);border:1px dashed rgba(204,9,47,.28);border-radius:7px;padding:9px 12px;font-size:8.5px;line-height:1.7;color:#fca5a5;">
+          <b style="color:#f87171;display:block;margin-bottom:3px;">Padrão · Hexagonal Architecture</b>
+          domain/ → application/ → infrastructure/ · @McpTool auto-registra métodos no AgentCore · DynamoDB conditional write idempotência · Outbox Pattern para EventBridge
+        </div>
+      </div>
+
+    </div><!-- /region -->
+
+    <!-- ══════ BRADESCO CONGLOMERADO (right panel) ══════ -->
+    <div class="region" style="left:1416px;top:0;width:356px;height:1120px;border-color:rgba(204,9,47,.35);">
+      <div class="region-lbl" style="color:#CC092F;">🏦 Bradesco Conglomerado</div>
+
+      <!-- BANCO -->
+      <div style="position:absolute;left:12px;top:24px;right:12px;background:rgba(204,9,47,.07);border:1.5px solid rgba(204,9,47,.4);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">🏦 Bradesco Banco S.A.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="svc cbr" style="position:relative;width:90px;height:72px;"><div class="svc-ico">💸</div><div class="svc-nm">PIX</div><div class="svc-sub">D+0 · DICT Resolução BCB 1/2020</div></div>
+          <div class="svc cbr" style="position:relative;width:90px;height:72px;"><div class="svc-ico">🔄</div><div class="svc-nm">TED</div><div class="svc-sub">Fallback PIX · Horário corte 17h30</div></div>
+          <div class="svc cbr" style="position:relative;width:90px;height:72px;"><div class="svc-ico">📋</div><div class="svc-nm">Arrecadação</div><div class="svc-sub">Convênio SEFAZ DETRAN 27 UFs</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:8.5px;color:#64748b;line-height:1.6;border-top:1px dashed rgba(204,9,47,.2);padding-top:7px;">
+          <b style="color:#94a3b8;">Core Bancário:</b> conta corrente · custódia · câmbio · float de escrow durante saga
+        </div>
+      </div>
+
+      <!-- BRADESCO SEGUROS -->
+      <div style="position:absolute;left:12px;top:180px;right:12px;background:rgba(231,21,123,.07);border:1.5px solid rgba(231,21,123,.4);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;color:#f472b6;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">🛡️ Bradesco Seguros S.A.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="svc cpk" style="position:relative;width:90px;height:72px;"><div class="svc-ico">🚗</div><div class="svc-nm">Auto Completo</div><div class="svc-sub">Colisão · Roubo · Furto</div></div>
+          <div class="svc cpk" style="position:relative;width:90px;height:72px;"><div class="svc-ico">📊</div><div class="svc-nm">Prêmio Fixo</div><div class="svc-sub">Apólice padrão · Scoring</div></div>
+          <div class="svc cpk" style="position:relative;width:90px;height:72px;"><div class="svc-ico">⚡</div><div class="svc-nm">Débito Intragrupo</div><div class="svc-sub">Zero custo de trilho · Contábil</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:8.5px;color:#64748b;line-height:1.6;border-top:1px dashed rgba(231,21,123,.2);padding-top:7px;">
+          <b style="color:#94a3b8;">Regulação:</b> SUSEP Circular 667/2022 · Divulgação metodologia · LGPD consentimento
+        </div>
+      </div>
+
+      <!-- BaaS / CaaS / LaaS -->
+      <div style="position:absolute;left:12px;top:336px;right:12px;background:rgba(1,168,141,.07);border:1.5px solid rgba(1,168,141,.4);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">💳 BaaS Platform · CaaS · LaaS</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="svc ct" style="position:relative;width:90px;height:72px;"><div class="svc-ico">💳</div><div class="svc-nm">CaaS</div><div class="svc-sub">Crédito Embedded ticket menor · 48x</div></div>
+          <div class="svc ct" style="position:relative;width:90px;height:72px;"><div class="svc-ico">🏦</div><div class="svc-nm">LaaS</div><div class="svc-sub">Financiamento estruturado 60x</div></div>
+          <div class="svc ct" style="position:relative;width:90px;height:72px;"><div class="svc-ico">🏛️</div><div class="svc-nm">BaaS Core</div><div class="svc-sub">Conta · KYC · Onboarding API</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:8.5px;color:#64748b;line-height:1.6;border-top:1px dashed rgba(1,168,141,.2);padding-top:7px;">
+          <b style="color:#94a3b8;">vaas-credito-service</b> consome CaaS/LaaS como MCP tool · não duplica a lógica de crédito
+        </div>
+      </div>
+
+      <!-- Bradesco Consórcio -->
+      <div style="position:absolute;left:12px;top:490px;right:12px;background:rgba(139,92,246,.07);border:1.5px solid rgba(139,92,246,.35);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">🎯 Bradesco Consórcio (Fase 3)</div>
+        <div class="svc cv" style="position:relative;width:90px;height:60px;"><div class="svc-ico">🏆</div><div class="svc-nm">Consórcio Auto</div><div class="svc-sub">Ramal Fase 3 · observador agora</div></div>
+        <div style="margin-top:8px;font-size:8.5px;color:#4a5568;line-height:1.5;">Alternativa à aquisição via financiamento — não duplica squad na Fase 1</div>
+      </div>
+
+      <!-- Fosso competitivo callout -->
+      <div style="position:absolute;left:12px;top:590px;right:12px;background:rgba(204,9,47,.08);border:1.5px solid rgba(204,9,47,.35);border-radius:10px;padding:13px 14px;">
+        <div style="font-size:9px;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">🔒 Fosso Competitivo</div>
+        <div style="font-size:9px;line-height:1.8;color:#94a3b8;">
+          <b style="color:#e0e6f0;">Por que nenhum concorrente replica:</b><br>
+          ✓ Banco: PIX + TED + Arrecadação (convênios)<br>
+          ✓ Seguradora: débito intragrupo zero custo<br>
+          ✓ Financiamento: CaaS + LaaS já em produção<br>
+          ✓ Conta corrente: CPA sem repasse externo<br>
+          ✓ Tributos: convênios SEFAZ/DETRAN 27 UFs<br>
+          <span style="color:#4a5568;">Fintech tem produto. Bradesco tem a cadeia.</span>
+        </div>
+      </div>
+
+      <!-- AWS Organizations -->
+      <div style="position:absolute;left:12px;top:750px;right:12px;border:1px dashed rgba(100,116,139,.35);border-radius:9px;padding:11px 12px;">
+        <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px;">AWS Organizations</div>
+
+        <div class="svc cpk" style="position:relative;width:72px;height:56px;margin-bottom:8px;margin-left:auto;margin-right:auto;"><div class="svc-ico">🏛️</div><div class="svc-nm" style="font-size:8px;">Root · Management</div></div>
+
+        <div style="display:flex;gap:7px;">
+          <div style="flex:1;border:1px dashed rgba(236,72,153,.4);border-radius:7px;padding:7px;">
+            <div style="font-size:8px;font-weight:700;color:#ec4899;margin-bottom:5px;">OU · Prod</div>
+            <div style="font-size:7.5px;color:#64748b;line-height:1.7;">vaas-prod<br>vaas-logs<br>vaas-security</div>
+          </div>
+          <div style="flex:1;border:1px dashed rgba(100,116,139,.35);border-radius:7px;padding:7px;">
+            <div style="font-size:8px;font-weight:700;color:#64748b;margin-bottom:5px;">OU · Non-Prod</div>
+            <div style="font-size:7.5px;color:#4a5568;line-height:1.7;">vaas-staging<br>vaas-dev<br>tooling</div>
+          </div>
+        </div>
+
+        <!-- SCP note -->
+        <div style="margin-top:8px;background:rgba(236,72,153,.06);border:1px solid rgba(236,72,153,.2);border-radius:6px;padding:7px 9px;font-size:8px;line-height:1.6;color:#f9a8d4;">
+          SCPs: deny fora de sa-east-1 · deny CloudTrail off · require KMS S3 · limit Bedrock roles
+        </div>
+      </div>
+
+      <!-- Compliance -->
+      <div style="position:absolute;left:12px;top:964px;right:12px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 12px;font-size:8.5px;line-height:1.75;color:#93c5fd;">
+        <b style="color:#60a5fa;display:block;margin-bottom:4px;">Compliance Regulatório</b>
+        BACEN BCB nº 1/2020 · PIX EndToEndId por split<br>
+        BACEN Circular 3.978/2020 · PLD-FT por beneficiário<br>
+        CMN 4.282 · Tributo antes de repasse ao vendedor<br>
+        LGPD · Dados pessoais fora do contexto do modelo<br>
+        SUSEP 667/2022 · Seguro UBI com trace SHAP
+      </div>
+
+    </div><!-- /conglomerado -->
+
+    <!-- ══════ SVG ARROWS ══════ -->
+    <svg class="arr" viewBox="0 0 1780 1120" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ao" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#FF9900"/></marker>
+        <marker id="ap" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#8C4FFF"/></marker>
+        <marker id="at" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#34d399"/></marker>
+        <marker id="apk" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#ec4899"/></marker>
+        <marker id="ag" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#64748b"/></marker>
+        <marker id="ab" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#60a5fa"/></marker>
+        <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 Z" fill="#CC092F"/></marker>
+      </defs>
+
+      <!-- Channels → Apigee -->
+      <line x1="66" y1="69" x2="334" y2="69" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#ag)"/>
+      <!-- Apigee → Route53 -->
+      <line x1="419" y1="69" x2="464" y2="69" stroke="#FF9900" stroke-width="1.5" marker-end="url(#ao)"/>
+      <!-- Route53 → CloudFront -->
+      <line x1="538" y1="69" x2="550" y2="69" stroke="#FF9900" stroke-width="1.5" marker-end="url(#ao)"/>
+      <!-- CloudFront → WAF -->
+      <line x1="624" y1="69" x2="636" y2="69" stroke="#FF9900" stroke-width="1.5" marker-end="url(#ao)"/>
+      <!-- WAF → ALB (inside VPC) -->
+      <path d="M710,104 L710,168 L169,168 L169,188" stroke="#FF9900" stroke-width="1.5" fill="none" marker-end="url(#ao)"/>
+      <!-- ALB → ECS tasks -->
+      <line x1="169" y1="262" x2="169" y2="382" stroke="#60a5fa" stroke-width="1.4" marker-end="url(#ab)"/>
+      <!-- ECS → Step Functions -->
+      <path d="M100" y1="400" x2="26" y2="434" stroke="#8C4FFF" stroke-width="1.3" stroke-dasharray="4,3" fill="none"/>
+      <line x1="100" y1="420" x2="86" y2="440" stroke="#8C4FFF" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+      <!-- ECS Agente → Bedrock -->
+      <path d="M830,290 C870,290 870,790 830,790" stroke="#34d399" stroke-width="1.3" stroke-dasharray="5,3" fill="none"/>
+      <line x1="282" y1="320" x2="282" y2="748" stroke="#34d399" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#at)"/>
+      <!-- ECS → Aurora (data) -->
+      <line x1="400" y1="382" x2="400" y2="548" stroke="#60a5fa" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#ab)"/>
+      <!-- ECS Seguro → Bradesco Seguros (intragrupo) -->
+      <path d="M870,260 C1100,260 1300,280 1414,280" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="6,3" fill="none" marker-end="url(#apk)"/>
+      <!-- ECS Credito → BaaS -->
+      <path d="M870,290" stroke="#34d399" stroke-width="1.3"/>
+      <path d="M870,300 C1100,300 1300,440 1414,440" stroke="#34d399" stroke-width="1.3" stroke-dasharray="5,3" fill="none" marker-end="url(#at)"/>
+      <!-- ECS → RENAVAM (external) -->
+      <path d="M304,124 L304,34" stroke="#64748b" stroke-width="1.3" stroke-dasharray="4,3" fill="none" marker-end="url(#ag)"/>
+      <!-- ECS Tributos → SEFAZ (external) -->
+      <path d="M750,124 L750,34" stroke="#64748b" stroke-width="1.3" stroke-dasharray="4,3" fill="none" marker-end="url(#ag)"/>
+      <!-- Split Payment → PIX/Arrecadação/Intragrupo labels arrow -->
+      <line x1="100" y1="500" x2="100" y2="535" stroke="#8C4FFF" stroke-width="1.3" marker-end="url(#ap)"/>
+      <!-- Bradesco Banco back to ECS -->
+      <path d="M1414,130 C1250,130 1050,130 900,174" stroke="#CC092F" stroke-width="1.4" stroke-dasharray="5,3" fill="none" marker-end="url(#ar)"/>
+    </svg>
+
+    <!-- BOTTOM LEGEND -->
+    <div style="position:absolute;bottom:14px;left:20px;display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#FF9900;border-radius:2px;display:inline-block;"></span>Networking · Edge</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#8C4FFF;border-radius:2px;display:inline-block;"></span>Serverless · Integração</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#34d399;border-radius:2px;display:inline-block;"></span>Bedrock · IA</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#3b82f6;border-radius:2px;display:inline-block;"></span>Database · Storage</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#ef4444;border-radius:2px;display:inline-block;"></span>Security · IAM</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;background:#CC092F;border-radius:2px;display:inline-block;"></span>Bradesco Intragrupo</div>
+      <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:7px;padding:5px 11px;font-size:8.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border:1px dashed #64748b;border-radius:2px;display:inline-block;"></span>Externo · Gov / Parceiro</div>
+    </div>
+
+  </div><!-- /diagram -->
+  </div><!-- /scroll -->
+
+  <!-- FOOTER NOTES -->
+  <div style="margin-top:18px;max-width:1140px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+    <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:9px;padding:13px 15px;font-size:10.5px;line-height:1.75;color:#64748b;">
+      <div style="color:#e0e6f0;font-weight:700;margin-bottom:6px;font-size:11.5px;">💳 Split Payment · Sequência Regulatória</div>
+      <b style="color:#94a3b8;">1.</b> Gate de Política (determinístico, não-IA)<br>
+      <b style="color:#94a3b8;">2.</b> SEFAZ · Arrecadação IPVA D+0 (obrigatório primeiro)<br>
+      <b style="color:#94a3b8;">3.</b> DETRAN · Licenciamento + Emplacamento D+1<br>
+      <b style="color:#94a3b8;">4.</b> PIX ao Dealer D+0 (somente após T2 confirmado)<br>
+      <b style="color:#94a3b8;">5.</b> Intragrupo Bradesco Seguros D+0 (zero custo trilho)<br>
+      <b style="color:#94a3b8;">6.</b> PIX Acessórios condicional D+2 (delivery.confirmed)
+    </div>
+    <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:9px;padding:13px 15px;font-size:10.5px;line-height:1.75;color:#64748b;">
+      <div style="color:#e0e6f0;font-weight:700;margin-bottom:6px;font-size:11.5px;">🤖 Agente de IA · Governança</div>
+      <b style="color:#94a3b8;">O agente PLANEJA</b> — o domain service EXECUTA<br>
+      Guardrail entrada: filtro PII, prompt injection, content<br>
+      Bedrock AgentCore descobre tools via @McpTool registry<br>
+      Gate de Política é código, nunca decisão do modelo<br>
+      Dados de clientes nunca saem da VPC (PrivateLink)<br>
+      Trilha CloudTrail imutável por split individual (S3 Object Lock)
+    </div>
+    <div style="background:#0d1117;border:1px solid #1e2a38;border-radius:9px;padding:13px 15px;font-size:10.5px;line-height:1.75;color:#64748b;">
+      <div style="color:#e0e6f0;font-weight:700;margin-bottom:6px;font-size:11.5px;">🔐 Segurança · Camadas</div>
+      <b style="color:#94a3b8;">Internet → ALB:</b> CloudFront + WAF + Shield filtra L7<br>
+      <b style="color:#94a3b8;">ALB → ECS:</b> SG inbound only ALB porta 8080<br>
+      <b style="color:#94a3b8;">ECS → AWS:</b> PrivateLink — dados nunca pela internet<br>
+      <b style="color:#94a3b8;">Data subnet:</b> zero rota para internet (isolada)<br>
+      <b style="color:#94a3b8;">KMS:</b> CMK separada por serviço de domínio<br>
+      <b style="color:#94a3b8;">IAM:</b> Task Role com least privilege por microserviço
+    </div>
+  </div>
+</div>
+</body>
+</html>
