@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaaS · App Bradesco · Full Commerce · Apresentação Executiva</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#060810;font-family:'DM Sans',sans-serif;color:#e0e6f0;overflow:hidden;height:100vh;display:flex;flex-direction:column;}
+
+  /* ── TOPBAR ── */
+  .topbar{background:#0b0d15;border-bottom:1px solid rgba(255,255,255,.07);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap;}
+  .tb-brand{display:flex;flex-direction:column;margin-right:8px;}
+  .tb-tag{font-size:9px;font-weight:700;color:#CC092F;text-transform:uppercase;letter-spacing:2px;font-family:'DM Mono',monospace;}
+  .tb-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+
+  .journey-sel{display:flex;gap:6px;}
+  .jbtn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .2s;font-family:'DM Sans',sans-serif;}
+  .jbtn.fc{color:#CC092F;border-color:#CC092F;background:transparent;}
+  .jbtn.fc.active{background:#CC092F;color:#fff;}
+  .jbtn.sp{color:#9b87f5;border-color:#9b87f5;background:transparent;}
+  .jbtn.sp.active{background:#9b87f5;color:#fff;}
+
+  .controls{display:flex;align-items:center;gap:7px;margin-left:auto;}
+  .cbtn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#e0e6f0;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .cbtn:hover{background:rgba(255,255,255,.12);}
+  .cbtn.play{background:#CC092F;border-color:#CC092F;}
+  .step-lbl{font-family:'DM Mono',monospace;font-size:11px;color:#4a5568;min-width:52px;}
+
+  /* ── SHELL ── */
+  .shell{display:flex;flex:1;overflow:hidden;}
+
+  /* ── PHONE AREA ── */
+  .phone-area{display:flex;align-items:center;justify-content:center;padding:20px 28px;flex-shrink:0;background:radial-gradient(ellipse at center,#12151f 0%,#060810 70%);}
+
+  /* ── PHONE FRAME ── */
+  .phone{width:300px;height:620px;background:#111318;border-radius:42px;position:relative;flex-shrink:0;
+    box-shadow:0 0 0 1px #252535,0 0 0 7px #0d0e18,0 50px 100px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.04);}
+  /* Side buttons */
+  .phone::before{content:'';position:absolute;right:-4px;top:80px;width:4px;height:44px;background:#252535;border-radius:0 3px 3px 0;}
+  .phone::after{content:'';position:absolute;left:-4px;top:70px;width:4px;height:30px;background:#252535;border-radius:3px 0 0 3px;box-shadow:0 42px 0 #252535,0 80px 0 #252535;}
+
+  /* Dynamic island */
+  .island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:88px;height:26px;background:#000;border-radius:15px;z-index:30;}
+
+  /* Screen */
+  .phone-screen{position:absolute;left:8px;top:8px;right:8px;bottom:8px;border-radius:36px;overflow:hidden;background:#f0f2f5;}
+
+  /* Screen slides */
+  .screen{position:absolute;inset:0;transition:transform .38s cubic-bezier(.4,0,.2,1),opacity .38s;will-change:transform;}
+  .screen.entering{transform:translateX(100%);opacity:0;}
+  .screen.active{transform:translateX(0);opacity:1;}
+  .screen.leaving{transform:translateX(-100%);opacity:0;}
+
+  /* ── APP UI COMPONENTS ── */
+  .app-status{height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 18px 6px;font-size:10.5px;font-weight:700;}
+  .app-time{color:#fff;}
+  .app-icons{display:flex;gap:5px;align-items:center;color:#fff;font-size:10px;}
+
+  .app-header{padding:10px 16px 12px;display:flex;align-items:center;justify-content:space-between;}
+  .app-header-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;}
+  .app-header-back{color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;}
+  .app-header-icons{display:flex;gap:10px;font-size:16px;}
+
+  .app-body{flex:1;overflow-y:auto;padding:0 12px 12px;}
+
+  .app-bottom-nav{height:58px;background:#fff;border-top:1px solid #e8eaee;display:flex;align-items:center;}
+  .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;font-weight:600;color:#94a3b8;cursor:default;}
+  .bnav-item.active{color:#CC092F;}
+  .bnav-icon{font-size:18px;}
+
+  /* Cards */
+  .card{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .card-sm{background:#fff;border-radius:12px;padding:11px;margin-bottom:8px;}
+
+  /* Balance card */
+  .balance-card{background:linear-gradient(135deg,#CC092F 0%,#900F15 100%);border-radius:18px;padding:16px;margin-bottom:12px;color:#fff;}
+  .bc-label{font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .bc-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:2px;}
+  .bc-sub{font-size:10px;opacity:.7;}
+
+  /* Quick actions */
+  .qactions{display:flex;gap:8px;margin-bottom:12px;}
+  .qa{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:#fff;border-radius:12px;padding:10px 4px;font-size:9px;font-weight:700;color:#333;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .qa-ico{font-size:20px;}
+
+  /* Feature banner */
+  .feature-banner{background:linear-gradient(135deg,#1a1a2e,#CC092F22);border:1px solid #CC092F33;border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;}
+  .fb-text b{display:block;font-size:12.5px;font-weight:700;color:#CC092F;margin-bottom:2px;}
+  .fb-text span{font-size:10.5px;color:#64748b;}
+  .fb-arrow{color:#CC092F;font-size:18px;margin-left:auto;}
+
+  /* Chat bubbles */
+  .chat-area{display:flex;flex-direction:column;gap:10px;padding:12px 0;}
+  .bubble-agent{background:#fff;border-radius:4px 16px 16px 16px;padding:10px 13px;max-width:85%;align-self:flex-start;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:12px;line-height:1.5;color:#333;}
+  .bubble-user{background:#CC092F;border-radius:16px 4px 16px 16px;padding:10px 13px;max-width:80%;align-self:flex-end;font-size:12px;line-height:1.5;color:#fff;}
+  .bubble-typing{background:#fff;border-radius:4px 16px 16px 16px;padding:10px 16px;align-self:flex-start;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .typing-dots{display:flex;gap:4px;}
+  .typing-dots span{width:6px;height:6px;background:#CC092F;border-radius:50%;animation:typingdot 1.2s infinite;}
+  .typing-dots span:nth-child(2){animation-delay:.2s;}
+  .typing-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes typingdot{0%,60%,100%{opacity:.3;}30%{opacity:1;}}
+
+  /* Vehicle card */
+  .vehicle-card{background:linear-gradient(135deg,#1a1a2e,#0f1225);border-radius:14px;padding:14px;color:#fff;margin-bottom:8px;}
+  .vc-badge{background:#CC092F;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:8px;}
+  .vc-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:4px;}
+  .vc-attrs{font-size:10.5px;opacity:.7;margin-bottom:10px;}
+  .vc-price{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#CC092F;}
+  .ev-badge{background:rgba(50,213,131,.2);color:#34d399;font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;display:inline-block;margin-top:6px;}
+
+  /* Tax rows */
+  .tax-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:12px;}
+  .tax-row:last-child{border-bottom:none;font-weight:700;}
+  .tax-label{color:#64748b;}
+  .tax-value{font-weight:600;color:#333;}
+
+  /* Payment options */
+  .pay-opt{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;border:1.5px solid #e8eaee;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+  .pay-opt.selected{border-color:#CC092F;background:#fff8f8;}
+  .pay-radio{width:18px;height:18px;border-radius:50%;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .pay-opt.selected .pay-radio{border-color:#CC092F;background:#CC092F;}
+  .pay-opt.selected .pay-radio::after{content:'';width:6px;height:6px;background:#fff;border-radius:50%;}
+  .pay-main{font-size:13px;font-weight:700;color:#333;}
+  .pay-sub{font-size:10.5px;color:#64748b;}
+  .pay-badge{margin-left:auto;background:#e8f8ef;color:#0f9d72;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;}
+
+  /* Insurance card */
+  .seg-card{background:linear-gradient(135deg,#fdeaec,#fff);border:1.5px solid #CC092F33;border-radius:14px;padding:14px;margin-bottom:10px;}
+  .seg-brand{font-size:9px;font-weight:700;color:#CC092F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .seg-name{font-size:13.5px;font-weight:800;color:#1a1a2e;margin-bottom:6px;}
+  .seg-price{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#CC092F;}
+  .seg-features{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+  .seg-feat{font-size:11px;color:#64748b;display:flex;align-items:center;gap:5px;}
+  .seg-feat .ok{color:#0f9d72;}
+
+  /* Conta card */
+  .conta-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #e8eaee;}
+  .conta-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .conta-icon{width:38px;height:38px;background:#CC092F;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0;}
+  .conta-feats{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .conta-feat{font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;}
+
+  /* Split bars */
+  .split-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .split-bar-label{font-size:10.5px;color:#64748b;min-width:90px;}
+  .split-bar-track{flex:1;height:10px;background:#f0f2f5;border-radius:5px;overflow:hidden;}
+  .split-bar-fill{height:100%;border-radius:5px;transition:width 1s ease;}
+  .split-bar-val{font-size:10px;font-weight:700;color:#333;min-width:50px;text-align:right;font-family:'DM Mono',monospace;}
+
+  /* Biometria */
+  .bio-screen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#fff;padding:30px;}
+  .bio-icon{width:90px;height:90px;border-radius:50%;border:3px solid #CC092F;display:flex;align-items:center;justify-content:center;font-size:44px;animation:bio-pulse 2s ease-in-out infinite;}
+  @keyframes bio-pulse{0%,100%{box-shadow:0 0 0 0 rgba(204,9,47,.3);}50%{box-shadow:0 0 0 16px rgba(204,9,47,.0);}}
+  .bio-title{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#1a1a2e;text-align:center;}
+  .bio-sub{font-size:12px;color:#94a3b8;text-align:center;}
+  .bio-dots{display:flex;gap:6px;}
+  .bio-dot{width:10px;height:10px;border-radius:50%;background:#CC092F;animation:bio-dot 1.4s ease-in-out infinite;}
+  .bio-dot:nth-child(2){animation-delay:.2s;}
+  .bio-dot:nth-child(3){animation-delay:.4s;}
+  @keyframes bio-dot{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1.1);}}
+
+  /* Confirmação */
+  .confirm-screen{height:100%;display:flex;flex-direction:column;align-items:center;background:#fff;padding:24px 16px;}
+  .confirm-check{width:70px;height:70px;border-radius:50%;background:#e8f8ef;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px;animation:pop .5s cubic-bezier(.17,.67,.42,1.27);}
+  @keyframes pop{from{transform:scale(0);}to{transform:scale(1);}}
+  .confirm-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#1a1a2e;margin-bottom:4px;text-align:center;}
+  .confirm-sub{font-size:12px;color:#64748b;margin-bottom:18px;text-align:center;}
+  .confirm-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8f9fb;border-radius:10px;margin-bottom:6px;width:100%;}
+  .confirm-ico{font-size:16px;flex-shrink:0;}
+  .confirm-text b{display:block;font-size:11px;font-weight:700;color:#333;}
+  .confirm-text span{font-size:10px;color:#94a3b8;}
+  .proto{font-family:'DM Mono',monospace;font-size:9px;color:#CC092F;font-weight:700;text-align:center;margin:10px 0 4px;}
+
+  /* Buttons */
+  .btn-primary{background:#CC092F;color:#fff;border:none;border-radius:12px;padding:13px;font-size:13.5px;font-weight:700;width:100%;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;}
+  .btn-ghost{background:#f0f2f5;color:#64748b;border:none;border-radius:12px;padding:11px;font-size:12.5px;font-weight:600;width:100%;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;}
+
+  /* Screen label */
+  .screen-badge{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:9px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:10px;white-space:nowrap;z-index:20;}
+
+  /* Splash red screens (header bg) */
+  .splash-red .app-status{background:#CC092F;}
+  .splash-red .app-header{background:#CC092F;}
+  .splash-white .app-status{background:#CC092F;}
+  .splash-white .app-header{background:#CC092F;}
+  .app-full-red{background:#CC092F;height:100%;display:flex;flex-direction:column;}
+  .app-full-white{background:#fff;height:100%;display:flex;flex-direction:column;}
+  .app-full-gray{background:#f0f2f5;height:100%;display:flex;flex-direction:column;}
+
+  /* Split payment journey */
+  .split-step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:6px;}
+  .split-step.done{background:#e8f8ef;}
+  .split-step.active{background:#fff3f4;border:1px solid #CC092F33;animation:split-glow 1.5s ease-in-out infinite;}
+  .split-step.pending{background:#f8f9fb;opacity:.5;}
+  @keyframes split-glow{0%,100%{box-shadow:none;}50%{box-shadow:0 0 0 3px rgba(204,9,47,.15);}}
+  .ss-ico{font-size:18px;flex-shrink:0;}
+  .ss-info b{display:block;font-size:11.5px;font-weight:700;color:#333;}
+  .ss-info span{font-size:10px;color:#94a3b8;}
+  .ss-val{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#333;}
+  .ss-check{margin-left:auto;color:#0f9d72;font-size:16px;}
+
+  /* ── LOG PANEL ── */
+  .log-panel{flex:1;background:#0b0d15;border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;min-width:0;}
+  .log-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);}
+  .log-head-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:3px;}
+  .log-head-desc{font-size:11px;color:#4a5568;}
+  .prog-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:8px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:2px;background:#CC092F;transition:width .4s ease;}
+  .log-body{flex:1;overflow-y:auto;padding:10px 14px;}
+  .log-entry{padding:9px 11px;border-radius:8px;margin-bottom:7px;border-left:3px solid;cursor:pointer;transition:background .15s;}
+  .log-entry.curr{background:rgba(255,255,255,.04);}
+  .log-entry.done{opacity:.45;}
+  .log-step{font-family:'DM Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
+  .log-title{font-size:12px;font-weight:700;color:#e0e6f0;margin-bottom:3px;}
+  .log-desc{font-size:10.5px;color:#64748b;line-height:1.55;}
+  .log-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+  .log-tag{font-size:8.5px;font-weight:700;padding:1px 7px;border-radius:8px;}
+  .lt-mcp{background:rgba(255,122,69,.12);color:#ff7a45;}
+  .lt-gate{background:rgba(45,212,168,.12);color:#2dd4a8;}
+  .lt-pix{background:rgba(50,213,131,.12);color:#34d399;}
+  .lt-intra{background:rgba(155,135,245,.12);color:#9b87f5;}
+  .lt-rag{background:rgba(78,168,222,.12);color:#60a5fa;}
+  .lt-audit{background:rgba(148,163,184,.12);color:#94a3b8;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand">
+    <span class="tb-tag">Bradesco · VaaS · Apresentação Executiva</span>
+    <span class="tb-title">App Bradesco · Full Commerce</span>
+  </div>
+
+  <div class="journey-sel">
+    <button class="jbtn fc active" id="jbtn-fc" onclick="selectJourney('fc',this)">🛒 Full Commerce</button>
+    <button class="jbtn sp" id="jbtn-sp" onclick="selectJourney('sp',this)">💳 Split Payment</button>
+  </div>
+
+  <div class="controls">
+    <span class="step-lbl" id="stepLbl">— / —</span>
+    <button class="cbtn" onclick="goFirst()">⏮</button>
+    <button class="cbtn" onclick="goPrev()">◀</button>
+    <button class="cbtn play" id="playBtn" onclick="togglePlay()">▶ Reproduzir</button>
+    <button class="cbtn" onclick="goNext()">Próximo ▶</button>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- PHONE AREA -->
+  <div class="phone-area">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="phone-screen" id="phoneScreen">
+        <!-- screens rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG PANEL -->
+  <div class="log-panel">
+    <div class="log-head">
+      <div class="log-head-name" id="logJourneyName">🛒 Full Commerce · Compra 0KM</div>
+      <div class="log-head-desc" id="logJourneyDesc">Pressione Reproduzir para iniciar a jornada</div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+    <div class="log-body" id="logBody">
+      <div style="padding:20px 10px;text-align:center;color:#3e4d62;font-size:12px;line-height:1.8;">
+        ▶ Pressione Reproduzir para ver<br>o que acontece nos bastidores<br>enquanto o cliente navega no app
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── SCREEN TEMPLATES ──
+const FC_SCREENS = [
+{
+  id:'fc1', title:'Home do App', color:'#CC092F',
+  log:{step:'Abertura do App',desc:'Cliente abre o app Bradesco. A sessão já está autenticada (biometria ou PIN). O tile "Bradesco Auto" aparece em destaque na home — posicionado pelo agente baseado no perfil de navegação recente.',tags:['lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;">9:41</span>
+        <span class="app-icons">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);">Bom dia,</div>
+          <div class="app-header-title">Raul 👋</div>
+        </div>
+        <div class="app-header-icons">🔔 👤</div>
+      </div>
+      <div class="app-body" style="padding:12px;">
+        <div class="balance-card">
+          <div class="bc-label">Conta Corrente</div>
+          <div class="bc-value">R$ ••••••</div>
+          <div class="bc-sub">Ag 0001 · CC 12345-6 · toque para ver</div>
+        </div>
+        <div class="qactions">
+          <div class="qa"><div class="qa-ico">💸</div>Pix</div>
+          <div class="qa"><div class="qa-ico">🔄</div>Transfer</div>
+          <div class="qa"><div class="qa-ico">📋</div>Pagar</div>
+          <div class="qa"><div class="qa-ico">➕</div>Mais</div>
+        </div>
+        <div class="feature-banner">
+          <div style="font-size:28px;">🚗</div>
+          <div class="fb-text">
+            <b>Bradesco Auto</b>
+            <span>Compre seu veículo 0KM com tudo incluído</span>
+          </div>
+          <div class="fb-arrow">›</div>
+        </div>
+        <div class="card-sm" style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:22px;">🛡️</div>
+          <div style="flex:1"><div style="font-size:11.5px;font-weight:700;color:#333;">Seguros Bradesco</div><div style="font-size:10px;color:#94a3b8;">Auto · Vida · Residencial</div></div>
+          <div style="color:#CC092F;font-size:16px;">›</div>
+        </div>
+      </div>
+      <div class="app-bottom-nav">
+        <div class="bnav-item active"><div class="bnav-icon">🏠</div>Home</div>
+        <div class="bnav-item"><div class="bnav-icon">💸</div>Pix</div>
+        <div class="bnav-item"><div class="bnav-icon">💳</div>Cartão</div>
+        <div class="bnav-item"><div class="bnav-icon">🛡️</div>Seguros</div>
+        <div class="bnav-item"><div class="bnav-icon">≡</div>Mais</div>
+      </div>
+    </div>`
+},
+{
+  id:'fc2', title:'Assistente · Busca do veículo', color:'#CC092F',
+  log:{step:'Apigee · Auth + MCP Gateway',desc:'Cliente toca em "Bradesco Auto". Apigee valida o JWT de sessão, aplica rate limiting e roteia para o vaas-agente-gw. O AgentCore recebe o contexto do cliente: nome, UF de residência (MG), histórico.',tags:['lt-mcp','lt-rag']},
+  html:`
+    <div class="app-full-white" style="display:flex;flex-direction:column;">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#fff;">9:42</span>
+        <span class="app-icons">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" onclick="">‹ Voltar</div>
+        <div class="app-header-title">Bradesco Auto</div>
+        <div style="width:44px"></div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;">
+        <div class="chat-area" style="flex:1;">
+          <div class="bubble-agent">
+            <b style="display:block;font-size:11px;color:#CC092F;margin-bottom:3px;">Bradesco Auto</b>
+            Olá, Raul! 👋 Posso te ajudar a encontrar e financiar seu próximo veículo com tudo incluído — seguro, tributos e emplacamento. O que você procura?
+          </div>
+          <div class="bubble-user">Quero um BYD Dolphin Comfort 2026 aqui em MG 🚗</div>
+          <div class="bubble-typing"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+      <div style="padding:10px 12px;background:#fff;border-top:1px solid #f0f2f5;display:flex;gap:8px;">
+        <div style="flex:1;background:#f0f2f5;border-radius:20px;padding:10px 14px;font-size:12px;color:#94a3b8;">Mensagem...</div>
+        <div style="width:36px;height:36px;background:#CC092F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;align-self:flex-end;">⬆️</div>
+      </div>
+    </div>`
+},
+{
+  id:'fc3', title:'Veículo encontrado + Tributos', color:'#CC092F',
+  log:{step:'RAG · Regra tributária MG · Incentivo EV',desc:'vaas-veiculo consulta RENAVAM/FIPE: BYD Dolphin Comfort 2026 · R$139.900. vaas-tributos chama Bedrock Knowledge Base: alíquota IPVA MG para elétrico = 1% (incentivo estadual). IPVA calculado: R$1.399 — economia de R$2.798 vs. combustão.',tags:['lt-rag','lt-mcp']},
+  html:`
+    <div class="app-full-white">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:43</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title">Bradesco Auto</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div style="font-size:11.5px;color:#64748b;margin-bottom:8px;">Encontrei para você em MG:</div>
+        <div class="vehicle-card">
+          <div class="vc-badge">Loja Oficial · BYD</div>
+          <div class="vc-name">BYD Dolphin Comfort 2026</div>
+          <div class="vc-attrs">100% elétrico · 301km autonomia · 0KM</div>
+          <div class="vc-price">R$ 139.900</div>
+          <div class="ev-badge">⚡ Incentivo EV: IPVA 1% em MG</div>
+        </div>
+        <div class="card">
+          <div style="font-size:11px;font-weight:700;color:#333;margin-bottom:8px;">📋 Tributos calculados para MG</div>
+          <div class="tax-row"><span class="tax-label">IPVA (1% elétrico)</span><span class="tax-value" style="color:#0f9d72;">R$ 1.399</span></div>
+          <div class="tax-row"><span class="tax-label">Licenciamento</span><span class="tax-value">R$ 172</span></div>
+          <div class="tax-row"><span class="tax-label">Emplacamento</span><span class="tax-value">R$ 254</span></div>
+          <div class="tax-row" style="border-top:1.5px solid #e8eaee;margin-top:4px;padding-top:8px;"><span class="tax-label">Total tributos</span><span class="tax-value" style="color:#CC092F;">R$ 1.825</span></div>
+          <div style="background:#e8f8ef;border-radius:8px;padding:7px;margin-top:8px;font-size:10.5px;color:#0f9d72;">⚡ Economia de R$ 2.798 vs. veículo a combustão</div>
+        </div>
+        <button class="btn-primary">Ver opções de pagamento →</button>
+      </div>
+    </div>`
+},
+{
+  id:'fc4', title:'Modalidade de pagamento', color:'#CC092F',
+  log:{step:'CaaS · LaaS · Simulação de crédito',desc:'vaas-credito chama o squad de LaaS via MCP tool (não recalcula crédito — consome o serviço já existente na Tribe BaaS). Taxa 1,19% a.m. · CET 15,2% a.a. Cliente seleciona 60x.',tags:['lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:44</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title" style="color:#fff;">Como quer pagar?</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:12px;">
+        <div class="card" style="margin-bottom:10px;">
+          <div style="font-size:10.5px;color:#94a3b8;margin-bottom:6px;">BYD Dolphin Comfort 2026 · R$ 139.900</div>
+          <div class="pay-opt">
+            <div class="pay-radio"></div>
+            <div><div class="pay-main">À vista</div><div class="pay-sub">R$ 139.900</div></div>
+          </div>
+          <div class="pay-opt selected">
+            <div class="pay-radio"></div>
+            <div><div class="pay-main">60x de R$ 2.782</div><div class="pay-sub">Taxa 1,19% a.m. · CET 15,2% a.a.</div></div>
+            <div class="pay-badge">Mais escolhido</div>
+          </div>
+          <div class="pay-opt">
+            <div class="pay-radio"></div>
+            <div><div class="pay-main">48x de R$ 3.354</div><div class="pay-sub">Taxa 1,19% a.m.</div></div>
+          </div>
+        </div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;color:#64748b;">Tributos (à vista)</div>
+          <div style="font-size:12px;font-weight:700;color:#CC092F;">+ R$ 1.825</div>
+        </div>
+        <button class="btn-primary">Continuar com 60x →</button>
+      </div>
+    </div>`
+},
+{
+  id:'fc5', title:'Proposta de seguro · Bradesco Seguros', color:'#CC092F',
+  log:{step:'Bradesco Seguros · Intragrupo',desc:'vaas-seguro chama Bradesco Seguros via canal intragrupo — sem PIX externo, sem custo de trilho. Scoring de risco calculado com perfil do veículo (elétrico = desconto 12%) e CEP de pernoite. Apólice disponível imediatamente após aceite.',tags:['lt-intra','lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:45</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title" style="color:#fff;">Proteção para seu Dolphin</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:12px;">
+        <div class="seg-card">
+          <div class="seg-brand">Bradesco Seguros</div>
+          <div class="seg-name">Auto Completo · Veículo Elétrico</div>
+          <div class="seg-price">R$ 312<span style="font-size:12px;font-weight:400;color:#64748b;">/mês · 12x</span></div>
+          <div class="seg-features">
+            <div class="seg-feat"><span class="ok">✓</span> Colisão total e parcial</div>
+            <div class="seg-feat"><span class="ok">✓</span> Roubo e furto</div>
+            <div class="seg-feat"><span class="ok">✓</span> Bateria elétrica coberta</div>
+            <div class="seg-feat"><span class="ok">✓</span> <b style="color:#CC092F;">Desconto 12% para elétrico</b></div>
+            <div class="seg-feat"><span class="ok">✓</span> Carro reserva 30 dias</div>
+          </div>
+        </div>
+        <div class="pay-opt selected"><div class="pay-radio"></div><div><div class="pay-main">Incluir seguro no meu pacote</div><div class="pay-sub">R$ 312/mês cobrado junto ao financiamento</div></div></div>
+        <div class="pay-opt"><div class="pay-radio"></div><div><div class="pay-main">Agora não</div></div></div>
+        <button class="btn-primary">Continuar →</button>
+      </div>
+    </div>`
+},
+{
+  id:'fc6', title:'Oferta de conta corrente', color:'#CC092F',
+  log:{step:'vaas-banking · CPA · Conta corrente',desc:'vaas-banking detecta que o cliente não é correntista Bradesco. Agente decide ofertar conta (CPA — Custo por Aquisição). O CPA é waived pelo Bradesco: o LTV esperado do novo correntista justifica o subsídio. Abertura via API BaaS Core.',tags:['lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:46</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title" style="color:#fff;">Uma oferta especial</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:12px;">
+        <div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:10px;">Raul, você ainda não é correntista Bradesco.<br>Centralize tudo em um só lugar.</div>
+        <div class="conta-card">
+          <div class="conta-header">
+            <div class="conta-icon">🏦</div>
+            <div><div style="font-size:13.5px;font-weight:800;color:#1a1a2e;">Conta Bradesco</div><div style="font-size:10.5px;color:#CC092F;font-weight:700;">Sem tarifas por 12 meses</div></div>
+          </div>
+          <div class="conta-feats">
+            <div class="conta-feat">✓ Cartão de crédito pré-aprovado</div>
+            <div class="conta-feat">✓ Pix ilimitado</div>
+            <div class="conta-feat">✓ Débito automático de IPVA e seguro</div>
+            <div class="conta-feat">✓ Parcelas do financiamento em débito</div>
+            <div class="conta-feat">✓ Gestão completa pelo app</div>
+          </div>
+        </div>
+        <div class="pay-opt selected"><div class="pay-radio"></div><div><div class="pay-main">Quero minha conta Bradesco</div><div class="pay-sub">Abertura digital em 2 minutos</div></div></div>
+        <div class="pay-opt"><div class="pay-radio"></div><div><div class="pay-main">Continuar sem conta</div></div></div>
+        <button class="btn-primary">Continuar →</button>
+      </div>
+    </div>`
+},
+{
+  id:'fc7', title:'Resumo · Split Payment', color:'#CC092F',
+  log:{step:'Agente · Plano de splits · Gate de Política',desc:'vaas-agente-gw monta o plano: 5 beneficiários · 3 trilhos. Gate de política verifica: valor dentro do limite de auto-aprovação (R$143.451 — todos os splits individuais abaixo de R$80k). DynamoDB idempotência registrada: attribute_not_exists(sagaId).',tags:['lt-gate','lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#CC092F;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:47</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#CC092F;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title" style="color:#fff;">Seu pacote completo</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="card">
+          <div class="tax-row"><span class="tax-label">Parcela (60x)</span><span class="tax-value">R$ 2.782/mês</span></div>
+          <div class="tax-row"><span class="tax-label">IPVA + Emplacamento</span><span class="tax-value">R$ 1.825</span></div>
+          <div class="tax-row"><span class="tax-label">Seguro Bradesco</span><span class="tax-value">R$ 312/mês</span></div>
+          <div class="tax-row"><span class="tax-label">Conta Bradesco</span><span class="tax-value" style="color:#0f9d72;">Sem tarifa</span></div>
+        </div>
+        <div class="card">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Split de pagamento</div>
+          <div class="split-bar-row"><span class="split-bar-label">Dealer BYD (PIX)</span><div class="split-bar-track"><div class="split-bar-fill" style="width:97%;background:#34d399;"></div></div><span class="split-bar-val">R$139.900</span></div>
+          <div class="split-bar-row"><span class="split-bar-label">SEFAZ-MG (IPVA)</span><div class="split-bar-track"><div class="split-bar-fill" style="width:65%;background:#60a5fa;"></div></div><span class="split-bar-val">R$1.399</span></div>
+          <div class="split-bar-row"><span class="split-bar-label">DETRAN (Empl.)</span><div class="split-bar-track"><div class="split-bar-fill" style="width:30%;background:#60a5fa;"></div></div><span class="split-bar-val">R$426</span></div>
+          <div class="split-bar-row"><span class="split-bar-label">Brad. Seguros</span><div class="split-bar-track"><div class="split-bar-fill" style="width:15%;background:#9b87f5;"></div></div><span class="split-bar-val">R$312</span></div>
+        </div>
+        <button class="btn-primary">🔐 Autorizar com biometria</button>
+      </div>
+    </div>`
+},
+{
+  id:'fc8', title:'Biometria · Autorização', color:'#CC092F',
+  log:{step:'Step Functions · Saga iniciada',desc:'Biometria confirmada. vaas-pagamento dispara o Step Functions Express Workflow. A saga inicia com o sequenciamento regulatório: SEFAZ primeiro (CMN 4.282 — tributo antes de repasse). Todos os splits com chave de idempotência gerada.',tags:['lt-gate','lt-mcp']},
+  html:`
+    <div class="bio-screen" style="background:linear-gradient(180deg,#fff 0%,#fdeaec 100%);">
+      <div style="font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Bradesco Auto</div>
+      <div class="bio-icon">👤</div>
+      <div class="bio-title">Confirme sua identidade</div>
+      <div class="bio-sub">Reconhecimento facial em andamento</div>
+      <div class="bio-dots"><div class="bio-dot"></div><div class="bio-dot"></div><div class="bio-dot"></div></div>
+      <div style="margin-top:10px;background:#fff;border-radius:12px;padding:10px 16px;font-size:11px;color:#64748b;text-align:center;max-width:220px;line-height:1.5;">Autorizando pagamento de<br><b style="color:#CC092F;font-size:13px;">R$ 143.451</b></div>
+    </div>`
+},
+{
+  id:'fc9', title:'Confirmação · Tudo resolvido', color:'#0f9d72',
+  log:{step:'Conciliação · Auditoria imutável',desc:'Todos os splits confirmados. Step Functions: soma R$142.037 = total capturado ✓. CloudTrail registra cada split individualmente (audit split-level — requisito BACEN Circular 3.978/2020). S3 Object Lock (WORM) · retenção 7 anos.',tags:['lt-pix','lt-intra','lt-audit']},
+  html:`
+    <div class="confirm-screen">
+      <div class="app-status" style="background:#0f9d72;width:100%;margin:-24px -16px 16px;padding:10px 16px 8px;display:flex;justify-content:space-between;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#fff;">9:48</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div class="confirm-check">✅</div>
+      <div class="confirm-title">Tudo certo, Raul!</div>
+      <div class="confirm-sub">Seu BYD Dolphin está sendo processado</div>
+      <div class="proto">Protocolo: BRD-FC-2026-88341</div>
+      <div style="width:100%;">
+        <div class="confirm-item"><div class="confirm-ico">💸</div><div class="confirm-text"><b>PIX ao dealer: confirmado</b><span>BYD Loja Oficial · R$139.900 · D+0</span></div></div>
+        <div class="confirm-item"><div class="confirm-ico">📊</div><div class="confirm-text"><b>IPVA recolhido: confirmado</b><span>SEFAZ-MG · R$1.399 · protocolo 30-4421</span></div></div>
+        <div class="confirm-item"><div class="confirm-ico">🏛️</div><div class="confirm-text"><b>Emplacamento agendado</b><span>DETRAN-MG · vistoria em 12/07</span></div></div>
+        <div class="confirm-item"><div class="confirm-ico">🛡️</div><div class="confirm-text"><b>Apólice ativa: 0074-2026</b><span>Bradesco Seguros · vigência imediata</span></div></div>
+        <div class="confirm-item"><div class="confirm-ico">🏦</div><div class="confirm-text"><b>Conta em abertura</b><span>Agência 0001 · app Bradesco</span></div></div>
+      </div>
+      <button class="btn-primary" style="background:#0f9d72;margin-top:10px;">Ir para Home</button>
+    </div>`
+}
+];
+
+const SP_SCREENS = [
+{
+  id:'sp1', title:'Resumo do pedido', color:'#9b87f5',
+  log:{step:'Checkout confirmado · Captura',desc:'Pedido #4521 confirmado pelo marketplace. Valor total capturado: R$ 143.451. vaas-pagamento recebe o plano de splits do agente: 5 beneficiários, 3 trilhos (PIX, Arrecadação, Intragrupo). Saga pronta para executar.',tags:['lt-mcp']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#7c3aed;padding:10px 16px 6px;">
+        <span class="app-time" style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:49</span>
+        <span class="app-icons" style="color:#fff;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#7c3aed;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹ Voltar</div>
+        <div class="app-header-title" style="color:#fff;">Split Payment</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="card"><div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">Pedido #4521 · BYD Dealer MG</div><div style="display:flex;justify-content:space-between;"><span style="font-size:13px;font-weight:700;">Total capturado</span><span style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#7c3aed;">R$ 143.451</span></div></div>
+        <div class="card">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">5 beneficiários identificados</div>
+          <div class="split-step done"><div class="ss-ico">🏢</div><div class="ss-info"><b>Dealer BYD</b><span>PIX D+0</span></div><div class="ss-val">R$139.900</div></div>
+          <div class="split-step pending"><div class="ss-ico">📊</div><div class="ss-info"><b>SEFAZ-MG</b><span>Arrecadação</span></div><div class="ss-val">R$1.399</div></div>
+          <div class="split-step pending"><div class="ss-ico">🏛️</div><div class="ss-info"><b>DETRAN-MG</b><span>Arrecadação</span></div><div class="ss-val">R$426</div></div>
+          <div class="split-step pending"><div class="ss-ico">🛡️</div><div class="ss-info"><b>Brad. Seguros</b><span>Intragrupo</span></div><div class="ss-val">R$312</div></div>
+          <div class="split-step pending"><div class="ss-ico">🏦</div><div class="ss-info"><b>Bradesco CPA</b><span>Waived</span></div><div class="ss-val">—</div></div>
+        </div>
+      </div>
+    </div>`
+},
+{
+  id:'sp2', title:'Agente planeja os splits', color:'#9b87f5',
+  log:{step:'AgentCore · Planejamento · Sequência regulatória',desc:'Agente monta o plano: tributos primeiro (CMN 4.282), dealer depois, intragrupo em paralelo. Agente PLANEJA — domain service EXECUTA. Gate de política aprovado: cada split individual abaixo do limite de R$80k. Idempotência registrada no DynamoDB.',tags:['lt-gate','lt-rag']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#7c3aed;padding:10px 16px 6px;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:50</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#7c3aed;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹</div>
+        <div class="app-header-title" style="color:#fff;">Orquestração</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="card" style="border:1.5px solid #7c3aed22;background:linear-gradient(135deg,#f8f0ff,#fff);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><div style="font-size:20px;">🤖</div><div><b style="font-size:12.5px;color:#7c3aed;">Agente Bradesco</b><div style="font-size:10px;color:#94a3b8;">Sequenciando pagamentos...</div></div></div>
+          <div style="font-size:11.5px;line-height:1.7;color:#333;">
+            Analisei a operação e defini a sequência:<br>
+            <span style="color:#60a5fa;">1º</span> Arrecadação tributos (obrigatório)<br>
+            <span style="color:#34d399;">2º</span> PIX ao dealer (após tributos)<br>
+            <span style="color:#9b87f5;">3º</span> Intragrupo seguros (paralelo)<br>
+            <span style="color:#64748b;">4º</span> CPA conta (waived)
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:#94a3b8;">Gate de política</span><span style="color:#0f9d72;font-weight:700;">✓ Aprovado</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#94a3b8;">Idempotência</span><span style="color:#0f9d72;font-weight:700;">✓ Registrada</span></div>
+        </div>
+        <div style="background:#fff3f4;border:1px solid #CC092F22;border-radius:10px;padding:10px;font-size:10.5px;color:#64748b;text-align:center;">Step Functions Express iniciando...<br><div style="display:flex;justify-content:center;gap:4px;margin-top:6px;"><div class="bio-dot" style="background:#CC092F;"></div><div class="bio-dot" style="background:#CC092F;animation-delay:.2s;"></div><div class="bio-dot" style="background:#CC092F;animation-delay:.4s;"></div></div></div>
+      </div>
+    </div>`
+},
+{
+  id:'sp3', title:'Executando: Tributos D+0', color:'#60a5fa',
+  log:{step:'Split 1+2 · Arrecadação SEFAZ + DETRAN',desc:'Step Functions dispara splits de arrecadação em paralelo: SEFAZ-MG (IPVA R$1.399) e DETRAN-MG (empl. R$426). Ambos via convênio de arrecadação Bradesco. Timeout 90s com retry ×3 backoff exponencial. PIX ao dealer bloqueado até confirmação.',tags:['lt-mcp','lt-pix']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#1565c0;padding:10px 16px 6px;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:51</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#1565c0;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹</div>
+        <div class="app-header-title" style="color:#fff;">Executando Pagamentos</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="split-step done"><div class="ss-ico">📊</div><div class="ss-info"><b>SEFAZ-MG · IPVA</b><span>Arrecadação · protocolo SEFAZ-30441</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">🏛️</div><div class="ss-info"><b>DETRAN-MG · Emplacamento</b><span>Arrecadação · vistoria 12/07</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step active"><div class="ss-ico">💸</div><div class="ss-info"><b>PIX ao Dealer BYD</b><span>Aguardando confirmação tributos...</span></div><div class="bio-dot" style="background:#60a5fa;"></div></div>
+        <div class="split-step pending"><div class="ss-ico">🛡️</div><div class="ss-info"><b>Bradesco Seguros</b><span>Intragrupo · aguardando</span></div><div class="ss-val">R$312</div></div>
+        <div class="split-step pending"><div class="ss-ico">🏦</div><div class="ss-info"><b>Conta Bradesco</b><span>CPA · waived</span></div><div class="ss-val">—</div></div>
+        <div style="background:#e8f1ff;border-radius:10px;padding:10px;text-align:center;margin-top:8px;font-size:11px;color:#1565c0;font-weight:600;">CMN 4.282: tributo confirmado antes de liberar PIX ao vendedor</div>
+      </div>
+    </div>`
+},
+{
+  id:'sp4', title:'PIX ao dealer + Intragrupo', color:'#34d399',
+  log:{step:'Split 3+4 · PIX Dealer + Intragrupo Seguros',desc:'Tributos confirmados (T+42s). Step Functions libera o PIX ao dealer: EndToEndId único gerado (Resolução BCB 1/2020). Simultaneamente: débito contábil intragrupo Bradesco S.A. → Bradesco Seguros S.A. — zero custo de trilho, apólice criada.',tags:['lt-pix','lt-intra']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#0d7a3e;padding:10px 16px 6px;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:51</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#0d7a3e;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹</div>
+        <div class="app-header-title" style="color:#fff;">Liquidando</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="split-step done"><div class="ss-ico">📊</div><div class="ss-info"><b>SEFAZ-MG · IPVA</b><span>✓ Arrecadado · D+0</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">🏛️</div><div class="ss-info"><b>DETRAN-MG · Emplacamento</b><span>✓ Agendado 12/07</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">💸</div><div class="ss-info"><b>PIX ao Dealer BYD</b><span>✓ R$139.900 · EndToEnd E88341</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step active"><div class="ss-ico">🛡️</div><div class="ss-info"><b>Bradesco Seguros</b><span>Intragrupo · apólice sendo criada...</span></div><div class="bio-dot" style="background:#9b87f5;"></div></div>
+        <div class="split-step pending"><div class="ss-ico">🏦</div><div class="ss-info"><b>Conta Bradesco</b><span>Abertura em andamento</span></div><div class="ss-val">—</div></div>
+        <div style="background:#e8f8ef;border-radius:10px;padding:10px;text-align:center;font-size:11px;color:#0d7a3e;font-weight:600;">R$ 141.725 liquidados · R$ 312 intragrupo em processamento</div>
+      </div>
+    </div>`
+},
+{
+  id:'sp5', title:'Conciliação · Tudo bateu', color:'#0f9d72',
+  log:{step:'Conciliação · Balanço confirmado',desc:'Consumer SQS (waitForTaskToken) recebe confirmação de todos os splits. Soma: R$139.900 + R$1.399 + R$426 + R$312 = R$142.037 + conta (waived) = total capturado ✓. Nenhuma divergência. Step Functions encerra com Succeed.',tags:['lt-audit']},
+  html:`
+    <div class="app-full-gray">
+      <div class="app-status" style="background:#0d7a3e;padding:10px 16px 6px;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:52</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div class="app-header" style="background:#0d7a3e;padding:10px 16px;">
+        <div class="app-header-back" style="color:#fff;">‹</div>
+        <div class="app-header-title" style="color:#fff;">Conciliação</div>
+        <div style="width:44px"></div>
+      </div>
+      <div class="app-body" style="padding-top:10px;">
+        <div class="card" style="text-align:center;padding:16px;"><div style="font-size:32px;margin-bottom:6px;">⚖️</div><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#0d7a3e;">Balanço confirmado</div><div style="font-size:11px;color:#64748b;margin-top:4px;">Soma dos splits = valor capturado</div></div>
+        <div class="split-step done"><div class="ss-ico">📊</div><div class="ss-info"><b>SEFAZ-MG</b><span>Arrecadado</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">🏛️</div><div class="ss-info"><b>DETRAN-MG</b><span>Arrecadado</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">💸</div><div class="ss-info"><b>PIX Dealer</b><span>Liquidado D+0</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">🛡️</div><div class="ss-info"><b>Bradesco Seguros</b><span>Apólice ativa</span></div><div class="ss-check">✓</div></div>
+        <div class="split-step done"><div class="ss-ico">🏦</div><div class="ss-info"><b>Conta Bradesco</b><span>Em abertura</span></div><div class="ss-check">✓</div></div>
+        <div style="background:#e8f8ef;border-radius:10px;padding:10px;font-size:10.5px;color:#0d7a3e;text-align:center;font-weight:700;">✅ Saga concluída · 5 splits · 3 trilhos · 52 segundos</div>
+      </div>
+    </div>`
+},
+{
+  id:'sp6', title:'Comprovante · Auditoria', color:'#0f9d72',
+  log:{step:'CloudTrail · Auditoria imutável · 7 anos',desc:'CloudTrail registra cada split individualmente: beneficiário qualificado, valor, trilho, timestamp, idempotency key, resultado. S3 Object Lock (WORM) garante imutabilidade por 7 anos — requisito COAF/BACEN Circular 3.978/2020 (PLD-FT por beneficiário).',tags:['lt-audit']},
+  html:`
+    <div class="confirm-screen">
+      <div class="app-status" style="background:#0f9d72;width:100%;margin:-24px -16px 14px;padding:10px 16px 8px;display:flex;justify-content:space-between;">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#fff;">9:52</span>
+        <span style="color:#fff;font-size:10px;">▲ 📶 🔋</span>
+      </div>
+      <div style="width:60px;height:60px;border-radius:50%;background:#e8f8ef;display:flex;align-items:center;justify-content:center;font-size:30px;animation:pop .5s cubic-bezier(.17,.67,.42,1.27);">✅</div>
+      <div class="confirm-title">Split Payment concluído</div>
+      <div class="confirm-sub">5 beneficiários · 52 segundos</div>
+      <div class="proto">BRD-SP-2026-88341 · Auditado CloudTrail</div>
+      <div style="width:100%;background:#f8f9fb;border-radius:12px;padding:12px;font-family:'DM Mono',monospace;font-size:9px;color:#4a5568;line-height:1.9;">
+        PIX E88341 · Dealer · R$139.900 ✓<br>
+        SEFAZ-MG-30441 · R$1.399 ✓<br>
+        DETRAN-MG-21112 · R$426 ✓<br>
+        INTRA-SEG-0074 · R$312 ✓<br>
+        CPA-CONTA-4521 · waived ✓<br>
+        <span style="color:#CC092F;">AUDIT · WORM · S3 · 7 anos</span>
+      </div>
+      <button class="btn-primary" style="background:#0f9d72;margin-top:10px;">Ver comprovante completo</button>
+    </div>`
+}
+];
+
+// ── STATE ──
+let journey = 'fc';
+let currentStep = -1;
+let playing = false;
+let playTimer = null;
+const SPEED = 2800;
+
+function getScreens(){ return journey === 'fc' ? FC_SCREENS : SP_SCREENS; }
+
+function renderScreen(idx){
+  const screens = getScreens();
+  const ph = document.getElementById('phoneScreen');
+  // Remove old screens
+  ph.innerHTML = '';
+  screens.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'screen ' + (i === idx ? 'active' : (i < idx ? 'leaving' : 'entering'));
+    div.innerHTML = s.html;
+    ph.appendChild(div);
+  });
+}
+
+function applyStep(idx){
+  const screens = getScreens();
+  currentStep = idx;
+  if(idx < 0){ renderScreen(-1); clearLog(); return; }
+  renderScreen(idx);
+  const s = screens[idx];
+  updateLog(idx, s.log, s.color);
+  document.getElementById('stepLbl').textContent = (idx+1) + ' / ' + screens.length;
+  document.getElementById('progFill').style.width = ((idx+1)/screens.length*100) + '%';
+  document.getElementById('progFill').style.background = s.color || '#CC092F';
+}
+
+function clearLog(){
+  document.getElementById('stepLbl').textContent = '— / —';
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('logBody').innerHTML = '<div style="padding:20px 10px;text-align:center;color:#3e4d62;font-size:12px;line-height:1.8;">▶ Pressione Reproduzir para ver<br>o que acontece nos bastidores</div>';
+}
+
+function updateLog(currentIdx, log, color){
+  const screens = getScreens();
+  const body = document.getElementById('logBody');
+  body.innerHTML = '';
+  screens.forEach((s, i) => {
+    const e = document.createElement('div');
+    e.className = 'log-entry ' + (i === currentIdx ? 'curr' : (i < currentIdx ? 'done' : ''));
+    e.style.borderLeftColor = i === currentIdx ? (s.color||'#CC092F') : (i < currentIdx ? '#1e2a38' : 'transparent');
+    const tagsHtml = (i === currentIdx && s.log.tags) ? s.log.tags.map(t=>`<span class="log-tag ${t}">${t.replace('lt-','')}</span>`).join('') : '';
+    e.innerHTML = `
+      <div class="log-step" style="color:${i===currentIdx?(s.color||'#CC092F'):'#3e4d62'}">${s.title}</div>
+      ${i===currentIdx?`<div class="log-title">${s.log.step}</div><div class="log-desc">${s.log.desc}</div><div class="log-tags">${tagsHtml}</div>`:''}
+    `;
+    e.onclick = ()=>{ stopPlay(); applyStep(i); };
+    body.appendChild(e);
+  });
+  const entries = body.querySelectorAll('.log-entry');
+  if(entries[currentIdx]) entries[currentIdx].scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function goNext(){ const s=getScreens(); if(currentStep<s.length-1){ applyStep(currentStep+1); }else stopPlay(); }
+function goPrev(){ if(currentStep>0) applyStep(currentStep-1); }
+function goFirst(){ stopPlay(); applyStep(0); }
+
+function togglePlay(){ playing ? stopPlay() : startPlay(); }
+function startPlay(){
+  playing=true;
+  document.getElementById('playBtn').textContent='⏸ Pausar';
+  if(currentStep<0) applyStep(0);
+  playTimer=setInterval(()=>{
+    const s=getScreens();
+    if(currentStep>=s.length-1){ stopPlay(); return; }
+    goNext();
+  }, SPEED);
+}
+function stopPlay(){
+  playing=false; clearInterval(playTimer);
+  document.getElementById('playBtn').textContent='▶ Reproduzir';
+}
+
+function selectJourney(j, btn){
+  stopPlay(); journey=j;
+  document.querySelectorAll('.jbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const screens=getScreens();
+  const name = j==='fc'?'🛒 Full Commerce · Compra 0KM':'💳 Split Payment Agêntico';
+  const desc = j==='fc'?'9 telas · Veículo + Tributos + Seguro + Conta':'6 telas · Orquestração e liquidação dos splits';
+  document.getElementById('logJourneyName').textContent=name;
+  document.getElementById('logJourneyDesc').textContent=desc;
+  applyStep(0);
+}
+
+// Init
+applyStep(0);
+</script>
+</body>
+</html>
